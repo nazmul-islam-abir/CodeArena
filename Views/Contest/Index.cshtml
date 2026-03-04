@@ -1,0 +1,402 @@
+@model IEnumerable<MyMvcApp.Models.Contest>
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeArena · Contests</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --border-light: #e2e8f0;
+            --navbar-bg: #ffffffcc;
+            --footer-bg: #eef2f6;
+            --primary: #0284c7;
+            --primary-light: #e0f2fe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+        body.dark {
+            --bg-body: #0b1120;
+            --bg-card: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-light: #334155;
+            --navbar-bg: #1e293be6;
+            --footer-bg: #0f172a;
+            --primary: #38bdf8;
+            --primary-light: #1e3a5f;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        .navbar {
+            background-color: var(--navbar-bg) !important;
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-light);
+        }
+        .navbar-brand, .nav-link {
+            color: var(--text-primary) !important;
+        }
+        .nav-link.active {
+            color: var(--primary) !important;
+            font-weight: 600;
+        }
+        .theme-toggle {
+            background: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+            padding: 0.4rem 1rem;
+            border-radius: 60px;
+            cursor: pointer;
+        }
+        .btn-outline-theme {
+            border-color: var(--border-light);
+            color: var(--text-primary);
+        }
+        .btn-outline-theme:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 30px -10px rgba(0,100,200,0.15);
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .status-active { background-color: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .status-upcoming { background-color: rgba(59, 130, 246, 0.2); color: var(--info); }
+        .status-ended { background-color: rgba(100, 116, 139, 0.2); color: var(--text-secondary); }
+        .difficulty-tag {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .countdown-timer {
+            font-family: 'Monospace';
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+        .contest-link {
+            background: var(--bg-body);
+            padding: 0.5rem;
+            border-radius: 8px;
+            border: 1px dashed var(--border-light);
+            font-family: monospace;
+        }
+        .footer {
+            background-color: var(--footer-bg);
+            border-top: 1px solid var(--border-light);
+        }
+        .filter-btn {
+            background: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .filter-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+        .create-contest-btn {
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-3" href="/">
+                <i class="bi bi-code-square me-2" style="color: var(--primary);"></i>CodeArena
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-2">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Problem">Problems</a></li>
+                    <li class="nav-item"><a class="nav-link active fw-bold" href="/Contest">Contests</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Ranking">Ranking</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Compiler">Compiler</a></li>
+                </ul>
+                <div class="d-flex gap-3 align-items-center">
+                    <button class="theme-toggle" id="themeToggle">
+                        <i class="bi bi-sun-fill me-1"></i> <span id="themeText">Light</span>
+                    </button>
+                    <a href="/Auth/Login" class="btn btn-outline-theme px-4 rounded-pill">Log in</a>
+                    <a href="/Auth/Signup" class="btn btn-primary px-4 rounded-pill">Sign up</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <div>
+                <h2 class="fw-bold"><i class="bi bi-trophy-fill me-2 text-warning"></i>Coding Contests</h2>
+                <p class="text-secondary">Compete, solve problems, and climb the leaderboard</p>
+            </div>
+            <div class="d-flex gap-3">
+                <a href="/Contest/MyContests" class="btn btn-outline-theme">
+                    <i class="bi bi-person-check me-2"></i>My Contests
+                </a>
+                <a href="/Contest/Create" class="create-contest-btn">
+                    <i class="bi bi-plus-circle me-2"></i>Create Contest
+                </a>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="mb-4">
+            <button class="filter-btn active" onclick="filterContests('all')">All Contests</button>
+            <button class="filter-btn" onclick="filterContests('active')">Active</button>
+            <button class="filter-btn" onclick="filterContests('upcoming')">Upcoming</button>
+            <button class="filter-btn" onclick="filterContests('ended')">Ended</button>
+            <button class="filter-btn" onclick="filterContests('registered')">My Registrations</button>
+        </div>
+
+        <!-- Contests Grid -->
+        <div class="row g-4" id="contestsContainer">
+            @foreach (var contest in Model)
+            {
+                <div class="col-lg-6 contest-card" data-status="@contest.Status.ToLower()" data-registered="@contest.IsRegistered.ToString().ToLower()">
+                    <div class="card p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <span class="status-badge status-@contest.Status.ToLower()">@contest.Status</span>
+                                @if (contest.RequiresApproval)
+                                {
+                                    <span class="status-badge ms-2" style="background-color: rgba(245, 158, 11, 0.2); color: var(--warning);">
+                                        <i class="bi bi-clock-history"></i> @contest.ApprovalStatus
+                                    </span>
+                                }
+                            </div>
+                            <span class="difficulty-tag">@contest.Difficulty</span>
+                        </div>
+
+                        <h4 class="fw-bold mb-2">@contest.Title</h4>
+                        <p class="text-secondary small mb-3">@contest.Description</p>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <small class="text-secondary">Organizer</small>
+                                <div><i class="bi bi-person-circle me-1"></i>@contest.Organizer</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-secondary">Participants</small>
+                                <div><i class="bi bi-people-fill me-1"></i>@contest.ParticipantCount</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <small class="text-secondary">Start Time</small>
+                                <div><i class="bi bi-calendar-event me-1"></i>@contest.StartTime.ToString("MMM dd, yyyy HH:mm")</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-secondary">Duration</small>
+                                <div><i class="bi bi-clock me-1"></i>@contest.Duration</div>
+                            </div>
+                        </div>
+
+                        @if (contest.Status == "Active")
+                        {
+                            <div class="mb-3">
+                                <small class="text-secondary">Time Remaining</small>
+                                <div class="countdown-timer" data-end="@contest.EndTime.ToString("yyyy-MM-ddTHH:mm:ss")">
+                                    Calculating...
+                                </div>
+                            </div>
+                        }
+
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div class="contest-link">
+                                <small><i class="bi bi-link-45deg me-1"></i>@contest.ContestLink</small>
+                            </div>
+                            <div>
+                                @if (contest.IsRegistered)
+                                {
+                                    <form method="post" action="/Contest/Unregister" style="display: inline;">
+                                        <input type="hidden" name="contestId" value="@contest.Id" />
+                                        <button type="submit" class="btn btn-outline-danger">
+                                            <i class="bi bi-x-circle me-1"></i>Unregister
+                                        </button>
+                                    </form>
+                                }
+                                else if (contest.Status != "Ended")
+                                {
+                                    <form method="post" action="/Contest/Register" style="display: inline;">
+                                        <input type="hidden" name="contestId" value="@contest.Id" />
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-check-circle me-1"></i>Register
+                                        </button>
+                                    </form>
+                                }
+                                <a href="/Contest/Details/@contest.Id" class="btn btn-outline-primary ms-2">
+                                    Details <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="container py-5">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card p-4 text-center h-100">
+                    <i class="bi bi-hourglass-split fs-1 text-primary mb-3"></i>
+                    <h5>Countdown Timer</h5>
+                    <p class="text-secondary small">Real-time countdown for each contest. Automatically ends when time expires.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-4 text-center h-100">
+                    <i class="bi bi-share-fill fs-1 text-success mb-3"></i>
+                    <h5>Participation via Link</h5>
+                    <p class="text-secondary small">Unique shareable links for each contest. Join with one click.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-4 text-center h-100">
+                    <i class="bi bi-trophy-fill fs-1 text-warning mb-3"></i>
+                    <h5>Live Leaderboard</h5>
+                    <p class="text-secondary small">Real-time rankings updated as submissions come in.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="pt-5 pb-4 mt-5 footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-5">
+                    <a class="navbar-brand fw-bold fs-3" href="/"><i class="bi bi-code-square me-2 text-primary"></i>CodeArena</a>
+                    <p class="text-secondary small col-lg-8 mt-3">Compete in coding contests, solve problems, and improve your skills.</p>
+                </div>
+                <div class="col-md-7">
+                    <div class="row">
+                        <div class="col-4"><h6 style="color: var(--text-primary);">Platform</h6><ul class="list-unstyled small"><li><a href="/Problem" class="text-secondary text-decoration-none">Problems</a></li><li><a href="/Contest" class="text-secondary text-decoration-none">Contests</a></li><li><a href="/Ranking" class="text-secondary text-decoration-none">Ranking</a></li></ul></div>
+                        <div class="col-4"><h6 style="color: var(--text-primary);">Support</h6><ul class="list-unstyled small"><li><a href="#" class="text-secondary text-decoration-none">FAQ</a></li><li><a href="#" class="text-secondary text-decoration-none">Rules</a></li></ul></div>
+                        <div class="col-4"><h6 style="color: var(--text-primary);">Team</h6><ul class="list-unstyled small"><li><a href="#" class="text-secondary text-decoration-none">About</a></li><li><a href="#" class="text-secondary text-decoration-none">Contact</a></li></ul></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Countdown timers
+        function updateAllCountdowns() {
+            document.querySelectorAll('.countdown-timer').forEach(timer => {
+                const endTime = new Date(timer.dataset.end).getTime();
+                const now = new Date().getTime();
+                const distance = endTime - now;
+
+                if (distance < 0) {
+                    timer.innerHTML = "Contest Ended";
+                    timer.style.color = "var(--danger)";
+                } else {
+                    const hours = Math.floor(distance / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    
+                    timer.innerHTML = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            });
+        }
+
+        setInterval(updateAllCountdowns, 1000);
+
+        // Filter contests
+        window.filterContests = function(filter) {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const contests = document.querySelectorAll('.contest-card');
+            
+            contests.forEach(contest => {
+                const status = contest.dataset.status;
+                const registered = contest.dataset.registered === 'true';
+                
+                if (filter === 'all') {
+                    contest.style.display = 'block';
+                } else if (filter === 'registered') {
+                    contest.style.display = registered ? 'block' : 'none';
+                } else {
+                    contest.style.display = status === filter ? 'block' : 'none';
+                }
+            });
+        };
+
+        // Theme toggle
+        const toggleBtn = document.getElementById('themeToggle');
+        const themeText = document.getElementById('themeText');
+        const body = document.body;
+
+        if (localStorage.getItem('theme') === 'dark') {
+            body.classList.add('dark');
+            themeText.innerText = 'Dark';
+            toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            body.classList.toggle('dark');
+            if (body.classList.contains('dark')) {
+                localStorage.setItem('theme', 'dark');
+                themeText.innerText = 'Dark';
+                toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
+            } else {
+                localStorage.setItem('theme', 'light');
+                themeText.innerText = 'Light';
+                toggleBtn.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Light';
+            }
+        });
+    </script>
+</body>
+</html>

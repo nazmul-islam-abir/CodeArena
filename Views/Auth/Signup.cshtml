@@ -1,0 +1,181 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeArena · Sign Up</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cf-bg: #f8fafc;
+            --cf-card: #ffffff;
+            --cf-text: #0f172a;
+            --cf-text-secondary: #475569;
+            --cf-border: #e2e8f0;
+            --cf-nav: #0f172a;
+            --cf-primary: #2563eb;
+        }
+
+        body.dark {
+            --cf-bg: #030712;
+            --cf-card: #111827;
+            --cf-text: #f9fafb;
+            --cf-text-secondary: #9ca3af;
+            --cf-border: #1f2937;
+            --cf-nav: #000000;
+            --cf-primary: #3b82f6;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--cf-bg);
+            color: var(--cf-text);
+            transition: all 0.2s ease;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .signup-card {
+            background: var(--cf-card);
+            border: 1px solid var(--cf-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .form-control {
+            background-color: var(--cf-bg);
+            border: 1px solid var(--cf-border);
+            color: var(--cf-text);
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+        }
+
+        .form-control:focus {
+            border-color: var(--cf-primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+
+        .btn-signup {
+            background: var(--cf-primary);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 12px;
+            width: 100%;
+            border: none;
+            font-weight: 600;
+        }
+
+        .btn-signup:hover {
+            background: #1d4ed8;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--cf-card);
+            border: 1px solid var(--cf-border);
+            color: var(--cf-text);
+            padding: 0.5rem 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle">
+        <i class="bi bi-sun-fill me-1"></i> <span id="themeText">Light</span>
+    </button>
+
+    <div class="signup-card" data-aos="fade-up">
+        <div class="text-center mb-4">
+            <a href="/" class="text-decoration-none">
+                <h2 class="fw-bold" style="color: var(--cf-primary);"><i class="bi bi-code-square me-2"></i>CodeArena</h2>
+            </a>
+            <p class="text-secondary mt-3">Create your account to start coding</p>
+        </div>
+
+        <form>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw500">First Name</label>
+                    <input type="text" class="form-control" placeholder="John">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw500">Last Name</label>
+                    <input type="text" class="form-control" placeholder="Doe">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw500">Username</label>
+                <input type="text" class="form-control" placeholder="johndoe">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw500">Email</label>
+                <input type="email" class="form-control" placeholder="john@example.com">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw500">Student ID</label>
+                <input type="text" class="form-control" placeholder="0222310005101078">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw500">Password</label>
+                <input type="password" class="form-control" placeholder="Create a password">
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw500">Confirm Password</label>
+                <input type="password" class="form-control" placeholder="Confirm your password">
+            </div>
+            <div class="mb-4 form-check">
+                <input type="checkbox" class="form-check-input" id="terms">
+                <label class="form-check-label text-secondary" for="terms">
+                    I agree to the <a href="#" style="color: var(--cf-primary);">Terms of Service</a> and <a href="#" style="color: var(--cf-primary);">Privacy Policy</a>
+                </label>
+            </div>
+            <button type="submit" class="btn-signup">Create Account</button>
+        </form>
+
+        <div class="text-center mt-4">
+            <p class="text-secondary">Already have an account? <a href="/Auth/Login" style="color: var(--cf-primary);" class="text-decoration-none fw600">Log in</a></p>
+        </div>
+    </div>
+
+    <script>
+        const toggleBtn = document.getElementById('themeToggle');
+        const themeText = document.getElementById('themeText');
+        const body = document.body;
+
+        if (localStorage.getItem('theme') === 'dark') {
+            body.classList.add('dark');
+            themeText.innerText = 'Dark';
+            toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            body.classList.toggle('dark');
+            if (body.classList.contains('dark')) {
+                localStorage.setItem('theme', 'dark');
+                themeText.innerText = 'Dark';
+                toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
+            } else {
+                localStorage.setItem('theme', 'light');
+                themeText.innerText = 'Light';
+                toggleBtn.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Light';
+            }
+        });
+    </script>
+</body>
+</html>

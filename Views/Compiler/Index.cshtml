@@ -1,0 +1,781 @@
+@{
+    Layout = null;
+    int selectedLanguage = ViewBag.SelectedLanguage ?? 54;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeArena · Multi-Language Compiler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/eclipse.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <style>
+        :root {
+            --cf-bg: #f8fafc;
+            --cf-card: #ffffff;
+            --cf-text: #0f172a;
+            --cf-text-secondary: #475569;
+            --cf-border: #e2e8f0;
+            --cf-nav: #ffffffcc;
+            --cf-primary: #2563eb;
+            --cf-primary-light: #dbeafe;
+            --editor-bg: #ffffff;
+            --editor-text: #0f172a;
+            --output-bg: #f8fafc;
+            --line-numbers: #94a3b8;
+            --table-header-bg: #f1f5f9;
+            --table-row-hover: #f8fafc;
+            --footer-bg: #eef2f6;
+        }
+
+        body.dark {
+            --cf-bg: #030712;
+            --cf-card: #111827;
+            --cf-text: #f9fafb;
+            --cf-text-secondary: #9ca3af;
+            --cf-border: #1f2937;
+            --cf-nav: #1e293be6;
+            --cf-primary: #3b82f6;
+            --cf-primary-light: #1e293b;
+            --editor-bg: #1a1a1a;
+            --editor-text: #e5e5e5;
+            --output-bg: #1e293b;
+            --line-numbers: #4b5563;
+            --table-header-bg: #2d3a4f;
+            --table-row-hover: #263445;
+            --footer-bg: #0f172a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--cf-bg);
+            color: var(--cf-text);
+            transition: all 0.2s ease;
+        }
+
+        .navbar {
+            background-color: var(--cf-nav) !important;
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--cf-border);
+        }
+
+        .navbar-brand, .nav-link {
+            color: var(--cf-text) !important;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: 1px solid var(--cf-border);
+            color: var(--cf-text);
+            padding: 0.4rem 1rem;
+            border-radius: 60px;
+            cursor: pointer;
+        }
+
+        .cf-card {
+            background: var(--cf-card);
+            border: 1px solid var(--cf-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .CodeMirror {
+            height: 450px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            border-radius: 8px;
+            border: 1px solid var(--cf-border);
+        }
+
+        .output-window {
+            background: var(--output-bg);
+            border: 1px solid var(--cf-border);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Consolas', monospace;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: var(--cf-text);
+        }
+
+        .btn-run {
+            background-color: #10b981;
+            color: white;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-run:hover:not(:disabled) {
+            background-color: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-run:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .language-badge {
+            background: var(--cf-primary-light);
+            color: var(--cf-text);
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .badge-verdict {
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .badge-ac { background-color: #10b981; color: white; }
+        .badge-wa { background-color: #ef4444; color: white; }
+        .badge-tle { background-color: #f59e0b; color: white; }
+        .badge-mle { background-color: #8b5cf6; color: white; }
+        .badge-ce { background-color: #6b7280; color: white; }
+        .badge-re { background-color: #dc2626; color: white; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            background: var(--cf-bg);
+            padding: 0.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .sample-code-btn {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sample-code-btn:hover {
+            background: var(--cf-primary-light);
+        }
+
+        footer {
+            background-color: var(--footer-bg);
+            border-top: 1px solid var(--cf-border);
+        }
+
+        .btn-outline-theme {
+            border-color: var(--cf-border);
+            color: var(--cf-text);
+        }
+        .btn-outline-theme:hover {
+            background-color: var(--cf-primary);
+            border-color: var(--cf-primary);
+            color: white;
+        }
+
+        .language-selector {
+            max-width: 250px;
+        }
+
+        .code-snippets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .snippet-tag {
+            background: var(--cf-primary-light);
+            color: var(--cf-text);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .snippet-tag:hover {
+            background: var(--cf-primary);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-3" href="/">
+                <i class="bi bi-code-square me-2" style="color: var(--cf-primary);"></i>CodeArena
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-2">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Problem">Problems</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Contest">Contests</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Ranking">Ranking</a></li>
+                    <li class="nav-item"><a class="nav-link active fw-bold" href="/Compiler">Compiler</a></li>
+                </ul>
+                <div class="d-flex gap-3 align-items-center">
+                    <button class="theme-toggle" id="themeToggle">
+                        <i class="bi bi-sun-fill me-1"></i> <span id="themeText">Light</span>
+                    </button>
+                    <a href="/Auth/Login" class="btn btn-outline-theme px-4 rounded-pill">Log in</a>
+                    <a href="/Auth/Signup" class="btn btn-primary px-4 rounded-pill">Sign up</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!-- Problem Context Banner (if solving a problem) -->
+@if (ViewBag.ProblemTitle != null)
+{
+    <div class="container mt-3">
+        <div class="alert alert-info" style="background-color: var(--primary-light); border-color: var(--border-light); color: var(--text-primary);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold mb-1"><i class="bi bi-puzzle-fill me-2"></i>Solving: @ViewBag.ProblemTitle</h5>
+                    <p class="mb-0 small">@ViewBag.ProblemDescription</p>
+                    <div class="mt-2">
+                        <span class="badge bg-secondary me-2">Sample Input: @ViewBag.ProblemSampleInput</span>
+                        <span class="badge bg-secondary">Expected Output: @ViewBag.ProblemSampleOutput</span>
+                    </div>
+                </div>
+                <a href="/Problem" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Back to Problems
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <div>
+                <h2 class="fw-bold"><i class="bi bi-code-slash me-2 text-primary"></i>Multi-Language Compiler</h2>
+                <p class="text-secondary mb-0">Supports 60+ programming languages via Judge0 API</p>
+            </div>
+            <div class="d-flex gap-2 mt-2 mt-lg-0">
+                <span class="language-badge"><i class="bi bi-clock"></i> Time: 2s</span>
+                <span class="language-badge"><i class="bi bi-memory"></i> Memory: 256 MB</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        <div class="row">
+            <!-- Left: Code Editor -->
+            <div class="col-lg-8">
+                <div class="cf-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                        <h5 class="fw-bold mb-0"><i class="bi bi-file-code me-2 text-primary"></i>Code Editor</h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-secondary" id="resetCode"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="formatCode"><i class="bi bi-braces"></i> Format</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Code Snippets -->
+                    <div class="code-snippets mb-3">
+                        <span class="snippet-tag" onclick="loadSnippet('cpp')">C++ Hello World</span>
+                        <span class="snippet-tag" onclick="loadSnippet('c')">C Hello World</span>
+                        <span class="snippet-tag" onclick="loadSnippet('python')">Python Hello World</span>
+                        <span class="snippet-tag" onclick="loadSnippet('java')">Java Hello World</span>
+                        <span class="snippet-tag" onclick="loadSnippet('javascript')">JavaScript</span>
+                        <span class="snippet-tag" onclick="loadSnippet('csharp')">C# Hello World</span>
+                        <span class="snippet-tag" onclick="loadSnippet('php')">PHP</span>
+                        <span class="snippet-tag" onclick="loadSnippet('go')">Go</span>
+                        <span class="snippet-tag" onclick="loadSnippet('rust')">Rust</span>
+                    </div>
+                    
+                    <form method="post" id="compilerForm">
+                        @{
+                            string defaultCode = @"#include <iostream>
+using namespace std;
+
+int main() {
+    // Your code here
+    cout << ""Hello, CodeArena!"" << endl;
+    
+    int a, b;
+    cin >> a >> b;
+    cout << ""Sum: "" << a + b << endl;
+    
+    return 0;
+}";
+                            string codeToDisplay = ViewBag.SubmittedCode ?? defaultCode;
+                        }
+                        <textarea name="sourceCode" id="codeEditor" class="d-none">@codeToDisplay</textarea>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                            <div class="d-flex gap-3 align-items-center">
+                                <select name="languageId" class="form-select form-select-sm language-selector" style="background-color: var(--cf-card); color: var(--cf-text); border-color: var(--cf-border);">
+                                    <optgroup label="C/C++">
+                                        <option value="54" selected="@(selectedLanguage == 54)">C++ (GCC 9.2.0)</option>
+                                        <option value="52" selected="@(selectedLanguage == 52)">C++ (GCC 7.4.0)</option>
+                                        <option value="76" selected="@(selectedLanguage == 76)">C++ (Clang 7.0.1)</option>
+                                        <option value="50" selected="@(selectedLanguage == 50)">C (GCC 9.2.0)</option>
+                                        <option value="49" selected="@(selectedLanguage == 49)">C (GCC 8.3.0)</option>
+                                        <option value="75" selected="@(selectedLanguage == 75)">C (Clang 7.0.1)</option>
+                                    </optgroup>
+                                    <optgroup label="Python">
+                                        <option value="71" selected="@(selectedLanguage == 71)">Python 3.8.1</option>
+                                        <option value="70" selected="@(selectedLanguage == 70)">Python 2.7.17</option>
+                                    </optgroup>
+                                    <optgroup label="Java">
+                                        <option value="62" selected="@(selectedLanguage == 62)">Java (OpenJDK 13)</option>
+                                        <option value="27" selected="@(selectedLanguage == 27)">Java (OpenJDK 8)</option>
+                                    </optgroup>
+                                    <optgroup label="Web Languages">
+                                        <option value="63" selected="@(selectedLanguage == 63)">JavaScript (Node.js 12.14)</option>
+                                        <option value="74" selected="@(selectedLanguage == 74)">TypeScript 3.7.4</option>
+                                        <option value="68" selected="@(selectedLanguage == 68)">PHP 7.4.1</option>
+                                    </optgroup>
+                                    <optgroup label=".NET">
+                                        <option value="51" selected="@(selectedLanguage == 51)">C# (Mono 6.6.0)</option>
+                                        <option value="88" selected="@(selectedLanguage == 88)">.NET Core 3.1</option>
+                                    </optgroup>
+                                    <optgroup label="Other Popular">
+                                        <option value="60" selected="@(selectedLanguage == 60)">Go 1.13.5</option>
+                                        <option value="73" selected="@(selectedLanguage == 73)">Rust 1.40.0</option>
+                                        <option value="72" selected="@(selectedLanguage == 72)">Ruby 2.7.0</option>
+                                        <option value="45" selected="@(selectedLanguage == 45)">Assembly (NASM 2.14)</option>
+                                        <option value="46" selected="@(selectedLanguage == 46)">Bash 5.0.0</option>
+                                        <option value="56" selected="@(selectedLanguage == 56)">Swift 5.2.3</option>
+                                        <option value="57" selected="@(selectedLanguage == 57)">Kotlin 1.3.70</option>
+                                        <option value="55" selected="@(selectedLanguage == 55)">Dart 2.8.4</option>
+                                        <option value="58" selected="@(selectedLanguage == 58)">R 3.6.1</option>
+                                        <option value="59" selected="@(selectedLanguage == 59)">Perl 5.26.1</option>
+                                    </optgroup>
+                                </select>
+                                <span class="text-secondary"><i class="bi bi-info-circle"></i> <span id="languageInfo">C++17</span></span>
+                            </div>
+                            <button type="submit" class="btn-run" id="runBtn">
+                                <span id="runText"><i class="bi bi-play-fill me-2"></i>Run Code</span>
+                                <span id="runSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Output Section -->
+                @if (ViewBag.Output != null)
+                {
+                    <div class="cf-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0"><i class="bi bi-terminal me-2 text-success"></i>Output</h5>
+                            @{
+                                string outputString = ViewBag.Output?.ToString() ?? "";
+                                int statusCode = ViewBag.StatusCode ?? 0;
+                            }
+                            @if (statusCode == 3)
+                            {
+                                <span class="badge-verdict badge-ac">Accepted ✓</span>
+                            }
+                            else if (statusCode == 4)
+                            {
+                                <span class="badge-verdict badge-wa">Wrong Answer ✗</span>
+                            }
+                            else if (statusCode == 5)
+                            {
+                                <span class="badge-verdict badge-tle">Time Limit Exceeded ⏰</span>
+                            }
+                            else if (statusCode == 6)
+                            {
+                                <span class="badge-verdict badge-mle">Memory Limit Exceeded 💾</span>
+                            }
+                            else if (statusCode == 7)
+                            {
+                                <span class="badge-verdict badge-re">Runtime Error ⚠️</span>
+                            }
+                            else if (statusCode == 8)
+                            {
+                                <span class="badge-verdict badge-ce">Compilation Error 🔧</span>
+                            }
+                        </div>
+                        
+                        <div class="output-window">
+                            <pre class="mb-0">@ViewBag.Output</pre>
+                        </div>
+
+                        <!-- Execution Stats -->
+                        @if (ViewBag.Time != null || ViewBag.Memory != null)
+                        {
+                            <div class="stats-grid">
+                                @if (ViewBag.Time != null)
+                                {
+                                    <div class="stat-item">
+                                        <small class="text-secondary">Execution Time</small>
+                                        <div><strong>@ViewBag.Time</strong></div>
+                                    </div>
+                                }
+                                @if (ViewBag.Memory != null)
+                                {
+                                    <div class="stat-item">
+                                        <small class="text-secondary">Memory Used</small>
+                                        <div><strong>@ViewBag.Memory</strong></div>
+                                    </div>
+                                }
+                                <div class="stat-item">
+                                    <small class="text-secondary">Status</small>
+                                    <div><strong>@(ViewBag.StatusDescription ?? "Completed")</strong></div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (statusCode >= 5 && statusCode <= 8)
+                        {
+                            <div class="alert alert-danger mt-3 mb-0">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <strong>@(ViewBag.StatusDescription):</strong> @ViewBag.Output
+                            </div>
+                        }
+                        else if (statusCode == 3)
+                        {
+                            <div class="alert alert-success mt-3 mb-0">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                <strong>Success!</strong> Program executed successfully
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Right: Info Panel -->
+            <div class="col-lg-4">
+                <!-- Language Info -->
+                <div class="cf-card mb-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-info"></i>Language Support</h5>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>C/C++</span>
+                            <span class="badge bg-success">5+ versions</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Python 2/3</span>
+                            <span class="badge bg-success">✓</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Java 8/13</span>
+                            <span class="badge bg-success">✓</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>JavaScript/Node.js</span>
+                            <span class="badge bg-success">✓</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>C#/.NET</span>
+                            <span class="badge bg-success">✓</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>PHP</span>
+                            <span class="badge bg-success">✓</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Go/Rust/Swift</span>
+                            <span class="badge bg-success">✓</span>
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-0">Total: 60+ programming languages supported via Judge0 API</p>
+                </div>
+
+                <!-- Quick Tips -->
+                <div class="cf-card mb-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-lightbulb me-2 text-warning"></i>Quick Tips</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i> Select language before running</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i> Click snippets to load examples</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i> Use Ctrl+Space for autocomplete</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i> Tab key for indentation</li>
+                        <li class="mb-2"><i class="bi bi-exclamation-triangle text-warning me-2"></i> Time limit: 2 seconds</li>
+                        <li class="mb-2"><i class="bi bi-exclamation-triangle text-warning me-2"></i> Memory limit: 256 MB</li>
+                    </ul>
+                </div>
+
+                <!-- Sample Code Snippets -->
+                <div class="cf-card">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-files me-2 text-primary"></i>Sample Code</h5>
+                    <div class="list-group list-group-flush">
+                        <button class="list-group-item bg-transparent border-bottom d-flex justify-content-between align-items-center sample-code-btn" onclick="loadSnippet('cpp')">
+                            <span><i class="bi bi-filetype-cpp me-2"></i>C++ Hello World</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                        <button class="list-group-item bg-transparent border-bottom d-flex justify-content-between align-items-center sample-code-btn" onclick="loadSnippet('c')">
+                            <span><i class="bi bi-filetype-c me-2"></i>C Hello World</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                        <button class="list-group-item bg-transparent border-bottom d-flex justify-content-between align-items-center sample-code-btn" onclick="loadSnippet('python')">
+                            <span><i class="bi bi-filetype-py me-2"></i>Python Hello World</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                        <button class="list-group-item bg-transparent border-bottom d-flex justify-content-between align-items-center sample-code-btn" onclick="loadSnippet('java')">
+                            <span><i class="bi bi-filetype-java me-2"></i>Java Hello World</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                        <button class="list-group-item bg-transparent border-bottom d-flex justify-content-between align-items-center sample-code-btn" onclick="loadSnippet('javascript')">
+                            <span><i class="bi bi-filetype-js me-2"></i>JavaScript</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                        <button class="list-group-item bg-transparent border-bottom d-flex justify-content-between align-items-center sample-code-btn" onclick="loadSnippet('csharp')">
+                            <span><i class="bi bi-filetype-cs me-2"></i>C# Hello World</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                        <button class="list-group-item bg-transparent border-bottom d-flex justify-content-between align-items-center sample-code-btn" onclick="loadSnippet('php')">
+                            <span><i class="bi bi-filetype-php me-2"></i>PHP</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                        <button class="list-group-item bg-transparent border-bottom d-flex justify-content-between align-items-center sample-code-btn" onclick="loadSnippet('go')">
+                            <span><i class="bi bi-filetype-go me-2"></i>Go</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                        <button class="list-group-item bg-transparent border-bottom d-flex justify-content-between align-items-center sample-code-btn" onclick="loadSnippet('rust')">
+                            <span><i class="bi bi-filetype-rs me-2"></i>Rust</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="pt-5 pb-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-5">
+                    <a class="navbar-brand fw-bold fs-3" href="/"><i class="bi bi-code-square me-2 text-primary"></i>CodeArena</a>
+                    <p class="text-secondary small col-lg-8 mt-3">Online programming judge with 60+ language support via Judge0 API</p>
+                </div>
+                <div class="col-md-7">
+                    <div class="row">
+                        <div class="col-4"><h6 style="color: var(--cf-text);">Platform</h6><ul class="list-unstyled small"><li><a href="/Problem" class="text-secondary text-decoration-none">Problems</a></li><li><a href="/Contest" class="text-secondary text-decoration-none">Contests</a></li><li><a href="/Ranking" class="text-secondary text-decoration-none">Ranking</a></li></ul></div>
+                        <div class="col-4"><h6 style="color: var(--cf-text);">Support</h6><ul class="list-unstyled small"><li><a href="#" class="text-secondary text-decoration-none">Docs</a></li><li><a href="#" class="text-secondary text-decoration-none">API</a></li></ul></div>
+                        <div class="col-4"><h6 style="color: var(--cf-text);">Team</h6><ul class="list-unstyled small"><li><a href="#" class="text-secondary text-decoration-none">About</a></li><li><a href="#" class="text-secondary text-decoration-none">Contact</a></li></ul></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/php/php.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/ruby/ruby.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/go/go.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/rust/rust.min.js"></script>
+    <script>
+        // Initialize CodeMirror
+        const textarea = document.getElementById('codeEditor');
+        let editor = CodeMirror.fromTextArea(textarea, {
+            lineNumbers: true,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            indentUnit: 4,
+            tabSize: 4,
+            lineWrapping: true,
+            theme: 'eclipse',
+            mode: 'text/x-c++src',
+            extraKeys: {
+                'Ctrl-Space': 'autocomplete',
+                'Tab': 'indentMore',
+                'Shift-Tab': 'indentLess'
+            }
+        });
+
+        // Language selector change - update mode
+        document.querySelector('select[name="languageId"]').addEventListener('change', function() {
+            const langId = this.value;
+            updateLanguageMode(langId);
+        });
+
+        function updateLanguageMode(langId) {
+            let mode = 'text/x-c++src';
+            let info = 'C++17';
+            
+            if (langId == 71 || langId == 70) {
+                mode = 'text/x-python';
+                info = 'Python';
+            } else if (langId == 62 || langId == 27) {
+                mode = 'text/x-java';
+                info = 'Java';
+            } else if (langId == 63 || langId == 74) {
+                mode = 'javascript';
+                info = 'JavaScript/TypeScript';
+            } else if (langId == 68) {
+                mode = 'application/x-httpd-php';
+                info = 'PHP';
+            } else if (langId == 51 || langId == 88) {
+                mode = 'text/x-csharp';
+                info = 'C#';
+            } else if (langId == 60) {
+                mode = 'text/x-go';
+                info = 'Go';
+            } else if (langId == 73) {
+                mode = 'text/x-rustsrc';
+                info = 'Rust';
+            } else if (langId == 72) {
+                mode = 'text/x-ruby';
+                info = 'Ruby';
+            } else if (langId == 45) {
+                mode = 'text/x-asm';
+                info = 'Assembly';
+            } else {
+                mode = 'text/x-c++src';
+                info = 'C/C++';
+            }
+            
+            editor.setOption('mode', mode);
+            document.getElementById('languageInfo').textContent = info;
+        }
+
+        // Theme toggle
+        const toggleBtn = document.getElementById('themeToggle');
+        const themeText = document.getElementById('themeText');
+        const body = document.body;
+
+        if (localStorage.getItem('theme') === 'dark') {
+            body.classList.add('dark');
+            themeText.innerText = 'Dark';
+            toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
+            editor.setOption('theme', 'dracula');
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            body.classList.toggle('dark');
+            if (body.classList.contains('dark')) {
+                localStorage.setItem('theme', 'dark');
+                themeText.innerText = 'Dark';
+                toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
+                editor.setOption('theme', 'dracula');
+            } else {
+                localStorage.setItem('theme', 'light');
+                themeText.innerText = 'Light';
+                toggleBtn.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Light';
+                editor.setOption('theme', 'eclipse');
+            }
+        });
+
+        // Reset code
+        document.getElementById('resetCode').addEventListener('click', () => {
+            const langId = document.querySelector('select[name="languageId"]').value;
+            loadDefaultCode(langId);
+        });
+
+        // Fullscreen toggle
+        document.getElementById('fullscreen').addEventListener('click', () => {
+            const editorElement = document.querySelector('.CodeMirror');
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                editorElement.requestFullscreen();
+            }
+        });
+
+        // Load code snippets
+        window.loadSnippet = function(lang) {
+            let code = '';
+            let langId = 54;
+            
+            switch(lang) {
+                case 'cpp':
+                    code = `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}`;
+                    langId = 54;
+                    break;
+                case 'c':
+                    code = `#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}`;
+                    langId = 50;
+                    break;
+                case 'python':
+                    code = `# Python 3\nprint("Hello, World!")\n\n# Simple input example\nname = input("Enter your name: ")\nprint(f"Hello, {name}")`;
+                    langId = 71;
+                    break;
+                case 'java':
+                    code = `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`;
+                    langId = 62;
+                    break;
+                case 'javascript':
+                    code = `// JavaScript (Node.js)\nconsole.log("Hello, World!");\n\n// Read input\nprocess.stdin.on('data', (data) => {\n    console.log(\`You entered: \${data}\`);\n    process.exit();\n});`;
+                    langId = 63;
+                    break;
+                case 'csharp':
+                    code = `using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello, World!");\n    }\n}`;
+                    langId = 51;
+                    break;
+                case 'php':
+                    code = `<?php\necho "Hello, World!\\n";\n\n// Read input\n$handle = fopen ("php://stdin","r");\n$line = fgets($handle);\necho "You entered: " . $line;\n?>`;
+                    langId = 68;
+                    break;
+                case 'go':
+                    code = `package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, World!")\n}`;
+                    langId = 60;
+                    break;
+                case 'rust':
+                    code = `fn main() {\n    println!("Hello, World!");\n}`;
+                    langId = 73;
+                    break;
+            }
+            
+            editor.setValue(code);
+            document.querySelector('select[name="languageId"]').value = langId;
+            updateLanguageMode(langId);
+        };
+
+        function loadDefaultCode(langId) {
+            if (langId == 71 || langId == 70) {
+                editor.setValue(`# Python 3\nprint("Hello, CodeArena!")\n\n# Input example\na, b = map(int, input().split())\nprint("Sum:", a + b)`);
+            } else if (langId == 62 || langId == 27) {
+                editor.setValue(`import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, CodeArena!");\n        \n        Scanner sc = new Scanner(System.in);\n        int a = sc.nextInt();\n        int b = sc.nextInt();\n        System.out.println("Sum: " + (a + b));\n    }\n}`);
+            } else {
+                editor.setValue(`#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, CodeArena!" << endl;\n    \n    int a, b;\n    cin >> a >> b;\n    cout << "Sum: " << a + b << endl;\n    \n    return 0;\n}`);
+            }
+        }
+
+        // Format code (simple)
+        document.getElementById('formatCode').addEventListener('click', () => {
+            editor.autoIndentRange({line: 0, ch: 0}, {line: editor.lineCount() - 1});
+        });
+
+        // Form submission spinner
+        document.getElementById('compilerForm').addEventListener('submit', function(e) {
+            const runBtn = document.getElementById('runBtn');
+            const runText = document.getElementById('runText');
+            const runSpinner = document.getElementById('runSpinner');
+            
+            runBtn.disabled = true;
+            runText.classList.add('d-none');
+            runSpinner.classList.remove('d-none');
+        });
+
+        @if (ViewBag.Output != null)
+        {
+            <text>
+            const runBtn = document.getElementById('runBtn');
+            const runText = document.getElementById('runText');
+            const runSpinner = document.getElementById('runSpinner');
+            runBtn.disabled = false;
+            runText.classList.remove('d-none');
+            runSpinner.classList.add('d-none');
+            </text>
+        }
+    </script>
+</body>
+</html>

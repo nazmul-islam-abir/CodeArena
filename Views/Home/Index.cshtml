@@ -1,0 +1,692 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeArena · Online Judge & Contest Hub</title>
+    <!-- Bootstrap 5 + icons + primary style (dark/light ready) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Google Font (Inter) for modern look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <!-- AOS (animate on scroll) for smooth scroll animations -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- Swiper (modern carousel) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <style>
+        * {
+            transition: background-color 0.2s ease, color 0.1s ease, border-color 0.2s;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* theme variables - FIXED for dark mode text visibility */
+        :root {
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --navbar-bg: #ffffffcc;
+            --footer-bg: #eef2f6;
+            --border-light: #e2e8f0;
+            --card-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.02);
+            --primary-light: #e0f2fe;
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --success-bg: #dcfce7;
+            --warning-bg: #fef9c3;
+            --table-header-bg: #f1f5f9;
+            --table-row-hover: #f8fafc;
+            --input-bg: #ffffff;
+            --input-text: #0f172a;
+            --input-border: #e2e8f0;
+        }
+        body.dark {
+            --bg-body: #0b1120;
+            --bg-card: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --navbar-bg: #1e293be6;
+            --footer-bg: #0f172a;
+            --border-light: #334155;
+            --card-shadow: 0 20px 25px -5px rgba(0,0,0,0.5), 0 8px 10px -6px #00000033;
+            --primary-light: #1e3a5f;
+            --primary: #38bdf8;
+            --primary-dark: #7dd3fc;
+            --table-header-bg: #2d3a4f;
+            --table-row-hover: #263445;
+            --input-bg: #2d3a4f;
+            --input-text: #f1f5f9;
+            --input-border: #4b5565;
+        }
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+        }
+        .navbar {
+            background-color: var(--navbar-bg) !important;
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-light);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .navbar-brand, .nav-link {
+            color: var(--text-primary) !important;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: var(--primary) !important;
+        }
+        .btn-outline-theme {
+            border-color: var(--border-light);
+            color: var(--text-primary);
+        }
+        .btn-outline-theme:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 24px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 30px -10px rgba(0,100,200,0.15);
+        }
+        .badge-feature {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 40px;
+        }
+        .section-title {
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        footer {
+            background-color: var(--footer-bg);
+            border-top: 1px solid var(--border-light);
+        }
+        /* carousel (swiper) custom */
+        .swiper {
+            padding: 15px 5px 40px 5px;
+        }
+        .swiper-slide {
+            height: auto;
+        }
+        .carousel-card {
+            background-color: var(--bg-card);
+            border-radius: 28px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-light);
+            height: 100%;
+        }
+        .theme-toggle {
+            cursor: pointer;
+            background: transparent;
+            border: 1px solid var(--border-light);
+            border-radius: 60px;
+            padding: 0.4rem 1rem;
+            color: var(--text-primary);
+        }
+        .gradient-text {
+            background: linear-gradient(145deg, #2563eb, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+        .countdown-chip {
+            background: var(--primary-light);
+            border-radius: 60px;
+            padding: 0.3rem 0.9rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+        /* Table styles for dark mode */
+        .table {
+            color: var(--text-primary) !important;
+        }
+        .table thead th {
+            background-color: var(--table-header-bg);
+            color: var(--text-primary);
+            border-bottom-color: var(--border-light);
+        }
+        .table tbody tr {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+        }
+        .table tbody tr:hover {
+            background-color: var(--table-row-hover);
+        }
+        .table td, .table th {
+            border-color: var(--border-light);
+            color: var(--text-primary);
+        }
+        /* Form controls for dark mode */
+        .form-control, .form-control-plaintext {
+            background-color: var(--input-bg);
+            color: var(--input-text);
+            border-color: var(--input-border);
+        }
+        .form-control:focus {
+            background-color: var(--input-bg);
+            color: var(--input-text);
+        }
+        .form-control-plaintext {
+            color: var(--text-primary);
+        }
+        /* Text colors */
+        .text-secondary {
+            color: var(--text-secondary) !important;
+        }
+        .text-muted {
+            color: var(--text-secondary) !important;
+        }
+        .bg-light {
+            background-color: var(--bg-card) !important;
+        }
+        .bg-light.dark\:bg-slate-800 {
+            background-color: var(--bg-card);
+        }
+        /* Badge colors */
+        .badge.bg-warning {
+            background-color: #f59e0b !important;
+            color: #000000;
+        }
+        /* Alert customization */
+        .alert {
+            background-color: var(--bg-card);
+            border-color: var(--border-light);
+            color: var(--text-primary);
+        }
+        .alert-success {
+            background-color: #14532d;
+            color: #bbf7d0;
+            border-color: #166534;
+        }
+        .alert-danger {
+            background-color: #7f1d1d;
+            color: #fecaca;
+            border-color: #991b1b;
+        }
+        .alert-warning {
+            background-color: #78350f;
+            color: #fed7aa;
+            border-color: #92400e;
+        }
+        .alert-info {
+            background-color: #1e3a5f;
+            color: #bae6fd;
+            border-color: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <!-- ========== NAVBAR ========== -->
+    <nav class="navbar navbar-expand-lg sticky-top py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-3" href="/">
+                <i class="bi bi-code-square me-2" style="color: var(--primary);"></i>CodeArena
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-2">
+                    <li class="nav-item"><a class="nav-link" href="../">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Problem">Problems</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Contest">Contests</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Ranking">Ranking</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Compiler">Compiler</a></li>
+                </ul>
+                <div class="d-flex gap-3 align-items-center">
+                    <button class="theme-toggle" id="themeToggle">
+                        <i class="bi bi-sun-fill me-1"></i> <span id="themeText">Light</span>
+                    </button>
+                    <a href="/Auth/Login" class="btn btn-outline-theme px-4 rounded-pill">Log in</a>
+                    <a href="/Auth/Signup" class="btn btn-primary px-4 rounded-pill">Sign up</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========== HERO SECTION ========== -->
+    <section id="home" class="pt-5 pb-4">
+        <div class="container py-5">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6" data-aos="fade-right">
+                    <span class="badge-feature mb-3 d-inline-block"><i class="bi bi-cpu me-1"></i> v2.0 · Launching soon</span>
+                    <h1 class="display-4 fw-bold mb-4">Where code meets <span class="gradient-text">challenge</span></h1>
+                    <p class="lead mb-4" style="color: var(--text-secondary) !important;">
+                        Online programming judge with real contest system, automated evaluation, hidden test cases & live leaderboard — built for university training.
+                    </p>
+                    <div class="d-flex flex-wrap gap-3 mb-4">
+                        <div><i class="bi bi-check-circle-fill text-primary me-1"></i> C++ supported</div>
+                        <div><i class="bi bi-check-circle-fill text-primary me-1"></i> TLE / MLE checks</div>
+                        <div><i class="bi bi-check-circle-fill text-primary me-1"></i> Contest timer</div>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <a href="#features" class="btn btn-primary btn-lg px-5 py-3 rounded-pill shadow-sm">Explore <i class="bi bi-arrow-right-short"></i></a>
+                        <a href="/Compiler" class="btn btn-outline-theme btn-lg px-5 py-3 rounded-pill">Try Compiler</a>
+                    </div>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left">
+                    <div class="card p-4 border-0">
+                        <img src="https://placehold.co/600x400/0f172a/ffffff?text=Live+Editor+Preview" class="rounded-4 img-fluid" alt="editor preview">
+                        <div class="d-flex justify-content-between mt-3 text-muted small">
+                            <span><i class="bi bi-filetype-cpp me-1"></i> main.cpp</span>
+                            <span><i class="bi bi-play-circle-fill text-success"></i> Run</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== INTRO CARDS (3) ========== -->
+    <section class="py-4">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4" data-aos="zoom-in" data-aos-delay="100">
+                    <div class="card p-4 h-100 border-0">
+                        <i class="bi bi-people-fill fs-1 text-primary mb-3"></i>
+                        <h4>200+ active coders</h4>
+                        <p class="text-secondary">University-level practice platform with weekly internal contests.</p>
+                    </div>
+                </div>
+                <div class="col-md-4" data-aos="zoom-in" data-aos-delay="200">
+                    <div class="card p-4 h-100 border-0">
+                        <i class="bi bi-trophy-fill fs-1 text-warning mb-3"></i>
+                        <h4>Real-time ELO</h4>
+                        <p class="text-secondary">Dynamic ranking based on problem difficulty & contest performance.</p>
+                    </div>
+                </div>
+                <div class="col-md-4" data-aos="zoom-in" data-aos-delay="300">
+                    <div class="card p-4 h-100 border-0">
+                        <i class="bi bi-shield-lock-fill fs-1 text-success mb-3"></i>
+                        <h4>Hidden test cases</h4>
+                        <p class="text-secondary">Anti-plagiarism & secure evaluation against brute force.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FEATURES SECTION (cards with icons) ========== -->
+    <section id="features" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <span class="badge-feature">platform deep-dive</span>
+                <h2 class="display-5 fw-bold mt-3 section-title">Everything inside the arena</h2>
+                <p class="col-lg-7 mx-auto text-secondary">From admin monitoring to contest timers – built for students, teachers, and competitive programmers.</p>
+            </div>
+            <div class="row g-4">
+                <!-- feature 1 -->
+                <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-duration="700">
+                    <div class="card p-4 h-100">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <i class="bi bi-person-badge fs-1" style="color: var(--primary);"></i>
+                            <h5 class="fw-bold mb-0">Role‑based access</h5>
+                        </div>
+                        <p class="text-secondary mb-0">Admin, user, and contestant roles. Admins manage problems, test cases, and approve contests.</p>
+                    </div>
+                </div>
+                <!-- feature 2 -->
+                <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="100">
+                    <div class="card p-4 h-100">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <i class="bi bi-bar-chart-steps fs-1 text-warning"></i>
+                            <h5 class="fw-bold mb-0">Live leaderboard</h5>
+                        </div>
+                        <p class="text-secondary mb-0">Points based on difficulty, tracks solved count, updates instantly during contests.</p>
+                    </div>
+                </div>
+                <!-- feature 3 -->
+                <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="200">
+                    <div class="card p-4 h-100">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <i class="bi bi-clock-history fs-1 text-danger"></i>
+                            <h5 class="fw-bold mb-0">TLE / MLE check</h5>
+                        </div>
+                        <p class="text-secondary mb-0">Strict time & memory limits enforced using free compiler API (C++ supported).</p>
+                    </div>
+                </div>
+                <!-- feature 4 -->
+                <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="300">
+                    <div class="card p-4 h-100">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <i class="bi bi-link-45deg fs-1" style="color: #a855f7;"></i>
+                            <h5 class="fw-bold mb-0">Contest via link</h5>
+                        </div>
+                        <p class="text-secondary mb-0">Share unique contest links – participants join instantly without extra steps.</p>
+                    </div>
+                </div>
+                <!-- feature 5 -->
+                <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="400">
+                    <div class="card p-4 h-100">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <i class="bi bi-eyeglasses fs-1 text-info"></i>
+                            <h5 class="fw-bold mb-0">Admin monitoring</h5>
+                        </div>
+                        <p class="text-secondary mb-0">Approve contests, monitor submissions, manage test cases & rankings.</p>
+                    </div>
+                </div>
+                <!-- feature 6 -->
+                <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="500">
+                    <div class="card p-4 h-100">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <i class="bi bi-hourglass-split fs-1 text-secondary"></i>
+                            <h5 class="fw-bold mb-0">Countdown timer</h5>
+                        </div>
+                        <p class="text-secondary mb-0">Real-time countdown for contests – ends automatically and shows remaining time.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ========== PROBLEMS SECTION ========== -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="badge-feature">practice makes perfect</span>
+            <h2 class="display-5 fw-bold mt-3 section-title">Featured Problems</h2>
+            <p class="col-lg-7 mx-auto text-secondary">Start with these popular problems and improve your coding skills.</p>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4" data-aos="fade-up">
+                <div class="card p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge" style="background-color: #10b981; color: white;">Easy</span>
+                        <span class="text-warning">10 pts</span>
+                    </div>
+                    <h5>Sum of Two Numbers</h5>
+                    <p class="text-secondary small">Calculate the sum of two integers. Basic input/output practice.</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="text-secondary"><i class="bi bi-check-circle-fill text-success me-1"></i> 245 solved</span>
+                        <a href="/Problem/Solve/1" class="btn btn-sm btn-outline-primary">Solve →</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="card p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge" style="background-color: #f59e0b; color: white;">Medium</span>
+                        <span class="text-warning">30 pts</span>
+                    </div>
+                    <h5>Factorial</h5>
+                    <p class="text-secondary small">Calculate factorial of a number. Practice loops and recursion.</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="text-secondary"><i class="bi bi-check-circle-fill text-success me-1"></i> 156 solved</span>
+                        <a href="/Problem/Solve/3" class="btn btn-sm btn-outline-primary">Solve →</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="card p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge" style="background-color: #ef4444; color: white;">Hard</span>
+                        <span class="text-warning">60 pts</span>
+                    </div>
+                    <h5>Binary Search</h5>
+                    <p class="text-secondary small">Implement binary search in a sorted array. Efficient searching practice.</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="text-secondary"><i class="bi bi-check-circle-fill text-success me-1"></i> 76 solved</span>
+                        <a href="/Problem/Solve/9" class="btn btn-sm btn-outline-primary">Solve →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-5">
+            <a href="/Problem" class="btn btn-primary btn-lg px-5 py-3 rounded-pill">
+                View All Problems <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+    <!-- ========== CAROUSEL (swiper) : test cases / user uploads loop ========== -->
+    <section class="py-5">
+        <div class="container">
+            <h3 class="fw-bold mb-4 text-center">How evaluation works <i class="bi bi-arrow-repeat ms-2"></i></h3>
+            <div class="swiper mySwiper">
+                <div class="swiper-wrapper">
+                    <div class="swiper-slide">
+                        <div class="carousel-card">
+                            <i class="bi bi-file-earmark-code fs-2 text-primary"></i>
+                            <h5 class="mt-2">1. User uploads code</h5>
+                            <p class="text-secondary small">C++ source via online editor or file.</p>
+                        </div>
+                    </div>
+                    <div class="swiper-slide">
+                        <div class="carousel-card">
+                            <i class="bi bi-incognito fs-2 text-warning"></i>
+                            <h5 class="mt-2">2. Hidden test cases</h5>
+                            <p class="text-secondary small">System runs against private I/O.</p>
+                        </div>
+                    </div>
+                    <div class="swiper-slide">
+                        <div class="carousel-card">
+                            <i class="bi bi-stopwatch fs-2 text-danger"></i>
+                            <h5 class="mt-2">3. TLE / MLE check</h5>
+                            <p class="text-secondary small">Time & memory limits enforced.</p>
+                        </div>
+                    </div>
+                    <div class="swiper-slide">
+                        <div class="carousel-card">
+                            <i class="bi bi-check2-circle fs-2 text-success"></i>
+                            <h5 class="mt-2">4. Instant result</h5>
+                            <p class="text-secondary small">Verdict: AC, WA, TLE… shown immediately.</p>
+                        </div>
+                    </div>
+                    <div class="swiper-slide">
+                        <div class="carousel-card">
+                            <i class="bi bi-trophy fs-2 text-warning"></i>
+                            <h5 class="mt-2">Rank update</h5>
+                            <p class="text-secondary small">Leaderboard and points recalculated.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="swiper-pagination"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== RANKING SYSTEM PREVIEW ========== -->
+    <section id="ranking" class="py-5">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-5" data-aos="fade-right">
+                    <span class="badge-feature">leaderboard</span>
+                    <h2 class="display-6 fw-bold mt-2">Dynamic ranking & points</h2>
+                    <p class="text-secondary">Points awarded based on problem difficulty. Live leaderboard tracks solved count and contest performance. ELO-style rating coming soon.</p>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check-lg text-primary me-2"></i> Difficulty: Easy (10pt), Medium (30pt), Hard (60pt)</li>
+                        <li class="mb-2"><i class="bi bi-check-lg text-primary me-2"></i> Contest rating multiplier</li>
+                        <li><i class="bi bi-check-lg text-primary me-2"></i> Plagiarism detection in future</li>
+                    </ul>
+                    <a href="/Ranking" class="btn btn-outline-theme mt-3">View Full Ranking <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="col-lg-7" data-aos="fade-left">
+                    <div class="card p-4">
+                        <table class="table table-borderless align-middle">
+                            <thead><tr><th>#</th><th>Coder</th><th>Solved</th><th>Points</th><th>Rating</th></tr></thead>
+                            <tbody>
+                                <tr><td>🥇</td><td><i class="bi bi-person-circle me-2"></i> Minhaz</td><td>24</td><td><strong>1840</strong></td><td><span class="badge bg-warning text-dark">GM</span></td></tr>
+                                <tr><td>🥈</td><td><i class="bi bi-person-circle me-2"></i> Junayed</td><td>21</td><td>1620</td><td><span class="badge bg-info">Expert</span></td></tr>
+                                <tr><td>🥉</td><td><i class="bi bi-person-circle me-2"></i> Nazmul</td><td>19</td><td>1480</td><td><span class="badge bg-secondary">Specialist</span></td></tr>
+                                <tr><td>4</td><td><i class="bi bi-person-circle me-2"></i> Abdullah</td><td>18</td><td>1405</td><td><span class="badge bg-secondary">Specialist</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== COMPILER + API CARD ========== -->
+    <section id="compiler" class="py-5">
+        <div class="container">
+            <div class="card p-5 border-0" style="background: linear-gradient(145deg, var(--bg-card), var(--bg-body));">
+                <div class="row">
+                    <div class="col-md-8">
+                        <span class="badge-feature"><i class="bi bi-cpu"></i> compiler API</span>
+                        <h2 class="fw-bold mt-2">Integrated with free online compiler API</h2>
+                        <p class="text-secondary col-lg-10">Currently supports C++ with hidden test case evaluation, TLE, MLE. Future languages: Python, Java, C.</p>
+                        <div class="d-flex gap-3 mt-4 flex-wrap">
+                            <span class="countdown-chip"><i class="bi bi-check-circle"></i> C++17</span>
+                            <span class="countdown-chip"><i class="bi bi-clock"></i> Time limit 2s</span>
+                            <span class="countdown-chip"><i class="bi bi-memory"></i> 256 MB</span>
+                        </div>
+                        <a href="/Compiler" class="btn btn-primary mt-4 px-5 py-2 rounded-pill">Try Compiler Now</a>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <i class="bi bi-terminal-plus" style="font-size: 5rem; color: var(--primary); opacity: 0.7;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== CONTEST SYSTEM + COUNTDOWN ========== -->
+    <section id="contests" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold section-title">User‑created contests & timers</h2>
+                <p class="text-secondary">Create, share, and compete – with automatic countdowns and participation links.</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6" data-aos="fade-up">
+                    <div class="card p-4 h-100">
+                        <i class="bi bi-hourglass-bottom fs-1 mb-3" style="color: #ea580c;"></i>
+                        <h4>Countdown timer</h4>
+                        <p class="text-secondary">Real‑time countdown for each contest; participants see remaining time, contest concludes automatically.</p>
+                        <div class="bg-light p-3 rounded-4 d-flex justify-content-around" style="background-color: var(--bg-card) !important;">
+                            <span class="fw-bold" style="color: var(--text-primary);">02 : 14 : 37</span>
+                            <span class="small text-secondary">( hrs : min : sec )</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6" data-aos="fade-up" data-aos-delay="100">
+                    <div class="card p-4 h-100">
+                        <i class="bi bi-share-fill fs-1 mb-3 text-info"></i>
+                        <h4>Participation via link</h4>
+                        <p class="text-secondary">Each contest generates a unique, shareable link. One click to join – no complex onboarding.</p>
+                        <div class="d-flex border rounded-pill p-1" style="border-color: var(--border-light) !important;">
+                            <input type="text" class="form-control-plaintext px-3" value="https://codearena.dev/contest/xy78" readonly>
+                            <button class="btn btn-sm btn-primary rounded-pill px-3">copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FUTURE IMPLEMENTATIONS ========== -->
+    <section class="py-5">
+        <div class="container">
+            <div class="card p-5 border-0" style="background: var(--primary-light);">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <h3 class="fw-bold" style="color: var(--text-primary);">🚀 Future implementations</h3>
+                        <div class="row mt-4 g-3">
+                            <div class="col-sm-6" style="color: var(--text-primary);"><i class="bi bi-check-circle-fill text-primary me-2"></i> Practice mode</div>
+                            <div class="col-sm-6" style="color: var(--text-primary);"><i class="bi bi-check-circle-fill text-primary me-2"></i> User rating (ELO)</div>
+                            <div class="col-sm-6" style="color: var(--text-primary);"><i class="bi bi-check-circle-fill text-primary me-2"></i> Plagiarism detection</div>
+                            <div class="col-sm-6" style="color: var(--text-primary);"><i class="bi bi-check-circle-fill text-primary me-2"></i> Editorial uploads</div>
+                            <div class="col-sm-6" style="color: var(--text-primary);"><i class="bi bi-check-circle-fill text-primary me-2"></i> More languages (Java, Python)</div>
+                            <div class="col-sm-6" style="color: var(--text-primary);"><i class="bi bi-check-circle-fill text-primary me-2"></i> Solution repository</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 text-end align-self-center">
+                        <i class="bi bi-stars" style="font-size: 4rem; opacity: 0.8; color: var(--primary);"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="pt-5 pb-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-5">
+                    <a class="navbar-brand fw-bold fs-3" href="/"><i class="bi bi-code-square me-2 text-primary"></i>CodeArena</a>
+                    <p class="text-secondary small col-lg-8 mt-3">Online programming judge & contest system — built with ASP.NET MVC, SQL Server, and love.</p>
+                    <p class="small text-secondary">© 2025 Team ByteForge: Abdullah, Nazmul, Junayed, Minhaz</p>
+                </div>
+                <div class="col-md-7">
+                    <div class="row">
+                        <div class="col-4"><h6 style="color: var(--text-primary);">Platform</h6><ul class="list-unstyled small"><li><a href="/Problem" class="text-secondary text-decoration-none">Problems</a></li><li><a href="/Contest" class="text-secondary text-decoration-none">Contests</a></li><li><a href="/Ranking" class="text-secondary text-decoration-none">Ranking</a></li></ul></div>
+                        <div class="col-4"><h6 style="color: var(--text-primary);">Support</h6><ul class="list-unstyled small"><li><a href="#" class="text-secondary text-decoration-none">Documentation</a></li><li><a href="#" class="text-secondary text-decoration-none">API</a></li><li><a href="#" class="text-secondary text-decoration-none">Status</a></li></ul></div>
+                        <div class="col-4"><h6 style="color: var(--text-primary);">Team</h6><ul class="list-unstyled small"><li><a href="#" class="text-secondary text-decoration-none">About</a></li><li><a href="#" class="text-secondary text-decoration-none">University</a></li><li><a href="#" class="text-secondary text-decoration-none">Contact</a></li></ul></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+        AOS.init({ duration: 800, once: true });
+        // Swiper carousel
+        new Swiper('.mySwiper', {
+            slidesPerView: 1,
+            spaceBetween: 20,
+            loop: true,
+            autoplay: { delay: 2500, disableOnInteraction: false },
+            pagination: { el: '.swiper-pagination', clickable: true },
+            breakpoints: {
+                640: { slidesPerView: 2 },
+                1024: { slidesPerView: 4 }
+            }
+        });
+
+        // dark / light switch
+        const toggleBtn = document.getElementById('themeToggle');
+        const themeText = document.getElementById('themeText');
+        const body = document.body;
+
+        // check local storage
+        if (localStorage.getItem('theme') === 'dark') {
+            body.classList.add('dark');
+            themeText.innerText = 'Dark';
+            toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
+        } else {
+            themeText.innerText = 'Light';
+            toggleBtn.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Light';
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            body.classList.toggle('dark');
+            if (body.classList.contains('dark')) {
+                localStorage.setItem('theme', 'dark');
+                themeText.innerText = 'Dark';
+                toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
+            } else {
+                localStorage.setItem('theme', 'light');
+                themeText.innerText = 'Light';
+                toggleBtn.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Light';
+            }
+        });
+    </script>
+</body>
+</html>

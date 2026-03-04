@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "ux6bLFVS7cw=",
+  "success": true,
+  "projectFilePath": "/Users/mac/MyMvcApp/MyMvcApp.csproj",
+  "expectedPackageFiles": [
+    "/Users/mac/.nuget/packages/newtonsoft.json/13.0.4/newtonsoft.json.13.0.4.nupkg.sha512"
+  ],
+  "logs": []
+}
