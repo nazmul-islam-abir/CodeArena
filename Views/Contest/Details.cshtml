@@ -1,6 +1,9 @@
 @model MyMvcApp.Models.Contest
 @{
-    Layout = null;
+    ViewData["Title"] = "Details Page";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    
     var problems = ViewBag.Problems as List<MyMvcApp.Models.ContestProblem>;
     var leaderboard = ViewBag.Leaderboard as List<MyMvcApp.Models.ContestLeaderboardEntry>;
 }
@@ -93,32 +96,6 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg sticky-top py-3">
-        <div class="container">
-            <a class="navbar-brand fw-bold fs-3" href="/">
-                <i class="bi bi-code-square me-2" style="color: var(--primary);"></i>CodeArena
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarMain">
-                <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-2">
-                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/Problem">Problems</a></li>
-                    <li class="nav-item"><a class="nav-link active fw-bold" href="/Contest">Contests</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/Ranking">Ranking</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/Compiler">Compiler</a></li>
-                </ul>
-                <div class="d-flex gap-3 align-items-center">
-                    <button class="theme-toggle" id="themeToggle">
-                        <i class="bi bi-sun-fill me-1"></i> <span id="themeText">Light</span>
-                    </button>
-                    <a href="/Auth/Login" class="btn btn-outline-theme px-4 rounded-pill">Log in</a>
-                    <a href="/Auth/Signup" class="btn btn-primary px-4 rounded-pill">Sign up</a>
-                </div>
-            </div>
-        </div>
-    </nav>
 
     <div class="container py-4">
         <!-- Back Button -->
@@ -321,24 +298,7 @@
         </div>
     </div>
 
-    <footer class="pt-5 pb-4 mt-5 footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-5">
-                    <a class="navbar-brand fw-bold fs-3" href="/"><i class="bi bi-code-square me-2 text-primary"></i>CodeArena</a>
-                    <p class="text-secondary small col-lg-8 mt-3">Compete in coding contests and improve your skills.</p>
-                </div>
-                <div class="col-md-7">
-                    <div class="row">
-                        <div class="col-4"><h6>Platform</h6><ul class="list-unstyled small"><li><a href="/Problem">Problems</a></li><li><a href="/Contest">Contests</a></li></ul></div>
-                        <div class="col-4"><h6>Support</h6><ul class="list-unstyled small"><li><a href="#">FAQ</a></li></ul></div>
-                        <div class="col-4"><h6>Team</h6><ul class="list-unstyled small"><li><a href="#">About</a></li></ul></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
-
+    
     <script>
         // Countdown
         function updateCountdown() {

@@ -1,7 +1,7 @@
 ﻿@{
-    Layout = null;
+    ViewData["Title"] = "Home Page";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -233,168 +233,118 @@
     </style>
 </head>
 <body>
-    <!-- ========== NAVBAR ========== -->
-    <nav class="navbar navbar-expand-lg sticky-top py-3">
-        <div class="container">
-            <a class="navbar-brand fw-bold fs-3" href="/">
-                <i class="bi bi-code-square me-2" style="color: var(--primary);"></i>CodeArena
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarMain">
-                <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-2">
-                    <li class="nav-item"><a class="nav-link" href="../">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../Problem">Problems</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../Contest">Contests</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../Ranking">Ranking</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../Compiler">Compiler</a></li>
-                </ul>
-                <div class="d-flex gap-3 align-items-center">
-                    <button class="theme-toggle" id="themeToggle">
-                        <i class="bi bi-sun-fill me-1"></i> <span id="themeText">Light</span>
-                    </button>
-                    <a href="/Auth/Login" class="btn btn-outline-theme px-4 rounded-pill">Log in</a>
-                    <a href="/Auth/Signup" class="btn btn-primary px-4 rounded-pill">Sign up</a>
-                </div>
-            </div>
-        </div>
-    </nav>
 
-    <!-- ========== HERO SECTION ========== -->
-    <section id="home" class="pt-5 pb-4">
-        <div class="container py-5">
-            <div class="row align-items-center g-5">
-                <div class="col-lg-6" data-aos="fade-right">
+<!-- ========== HERO SECTION ========== -->
+<section id="home" class="pt-5 pb-4">
+    <div class="container py-5">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6" data-aos="fade-right">
+                @if (Context.Session.GetString("UserId") != null)
+                {
+                    <span class="badge-feature mb-3 d-inline-block">
+                        <i class="bi bi-person-circle me-1"></i> 
+                        Welcome back, @Context.Session.GetString("UserFullName")!
+                    </span>
+                }
+                else
+                {
                     <span class="badge-feature mb-3 d-inline-block"><i class="bi bi-cpu me-1"></i> v2.0 · Launching soon</span>
-                    <h1 class="display-4 fw-bold mb-4">Where code meets <span class="gradient-text">challenge</span></h1>
-                    <p class="lead mb-4" style="color: var(--text-secondary) !important;">
-                        Online programming judge with real contest system, automated evaluation, hidden test cases & live leaderboard — built for university training.
-                    </p>
-                    <div class="d-flex flex-wrap gap-3 mb-4">
-                        <div><i class="bi bi-check-circle-fill text-primary me-1"></i> C++ supported</div>
-                        <div><i class="bi bi-check-circle-fill text-primary me-1"></i> TLE / MLE checks</div>
-                        <div><i class="bi bi-check-circle-fill text-primary me-1"></i> Contest timer</div>
-                    </div>
-                    <div class="d-flex gap-3">
-                        <a href="#features" class="btn btn-primary btn-lg px-5 py-3 rounded-pill shadow-sm">Explore <i class="bi bi-arrow-right-short"></i></a>
-                        <a href="/Compiler" class="btn btn-outline-theme btn-lg px-5 py-3 rounded-pill">Try Compiler</a>
-                    </div>
+                }
+                <h1 class="display-4 fw-bold mb-4">Where code meets <span class="gradient-text">challenge</span></h1>
+                <p class="lead mb-4" style="color: var(--text-secondary) !important;">
+                    Online programming judge with real contest system, automated evaluation, hidden test cases & live leaderboard — built for university training.
+                </p>
+                <div class="d-flex flex-wrap gap-3 mb-4">
+                    <div><i class="bi bi-check-circle-fill text-primary me-1"></i> C++ supported</div>
+                    <div><i class="bi bi-check-circle-fill text-primary me-1"></i> TLE / MLE checks</div>
+                    <div><i class="bi bi-check-circle-fill text-primary me-1"></i> Contest timer</div>
                 </div>
-                <div class="col-lg-6" data-aos="fade-left">
-                    <div class="card p-4 border-0">
-                        <img src="https://placehold.co/600x400/0f172a/ffffff?text=Live+Editor+Preview" class="rounded-4 img-fluid" alt="editor preview">
-                        <div class="d-flex justify-content-between mt-3 text-muted small">
-                            <span><i class="bi bi-filetype-cpp me-1"></i> main.cpp</span>
-                            <span><i class="bi bi-play-circle-fill text-success"></i> Run</span>
-                        </div>
+                <div class="d-flex gap-3">
+                    <a href="#features" class="btn btn-primary btn-lg px-5 py-3 rounded-pill shadow-sm">Explore <i class="bi bi-arrow-right-short"></i></a>
+                    <a href="/Compiler" class="btn btn-outline-theme btn-lg px-5 py-3 rounded-pill">Try Compiler</a>
+                </div>
+            </div>
+            <div class="col-lg-6" data-aos="fade-left">
+                <div class="card p-4 border-0">
+                    <img src="https://placehold.co/600x400/0f172a/ffffff?text=Live+Editor+Preview" class="rounded-4 img-fluid" alt="editor preview">
+                    <div class="d-flex justify-content-between mt-3 text-muted small">
+                        <span><i class="bi bi-filetype-cpp me-1"></i> main.cpp</span>
+                        <span><i class="bi bi-play-circle-fill text-success"></i> Run</span>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- ========== INTRO CARDS (3) ========== -->
-    <section class="py-4">
-        <div class="container">
-            <div class="row g-4">
-                <div class="col-md-4" data-aos="zoom-in" data-aos-delay="100">
-                    <div class="card p-4 h-100 border-0">
-                        <i class="bi bi-people-fill fs-1 text-primary mb-3"></i>
-                        <h4>200+ active coders</h4>
-                        <p class="text-secondary">University-level practice platform with weekly internal contests.</p>
-                    </div>
+<!-- ========== INTRO CARDS (3) ========== -->
+<section class="py-4">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="100">
+                <div class="card p-4 h-100 border-0">
+                    <i class="bi bi-people-fill fs-1 text-primary mb-3"></i>
+                    <h4>200+ active coders</h4>
+                    <p class="text-secondary">University-level practice platform with weekly internal contests.</p>
                 </div>
-                <div class="col-md-4" data-aos="zoom-in" data-aos-delay="200">
-                    <div class="card p-4 h-100 border-0">
-                        <i class="bi bi-trophy-fill fs-1 text-warning mb-3"></i>
-                        <h4>Real-time ELO</h4>
-                        <p class="text-secondary">Dynamic ranking based on problem difficulty & contest performance.</p>
-                    </div>
+            </div>
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="200">
+                <div class="card p-4 h-100 border-0">
+                    <i class="bi bi-trophy-fill fs-1 text-warning mb-3"></i>
+                    <h4>Real-time ELO</h4>
+                    <p class="text-secondary">Dynamic ranking based on problem difficulty & contest performance.</p>
                 </div>
-                <div class="col-md-4" data-aos="zoom-in" data-aos-delay="300">
-                    <div class="card p-4 h-100 border-0">
-                        <i class="bi bi-shield-lock-fill fs-1 text-success mb-3"></i>
-                        <h4>Hidden test cases</h4>
-                        <p class="text-secondary">Anti-plagiarism & secure evaluation against brute force.</p>
-                    </div>
+            </div>
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="300">
+                <div class="card p-4 h-100 border-0">
+                    <i class="bi bi-shield-lock-fill fs-1 text-success mb-3"></i>
+                    <h4>Hidden test cases</h4>
+                    <p class="text-secondary">Anti-plagiarism & secure evaluation against brute force.</p>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- ========== FEATURES SECTION (cards with icons) ========== -->
-    <section id="features" class="py-5">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="badge-feature">platform deep-dive</span>
-                <h2 class="display-5 fw-bold mt-3 section-title">Everything inside the arena</h2>
-                <p class="col-lg-7 mx-auto text-secondary">From admin monitoring to contest timers – built for students, teachers, and competitive programmers.</p>
+<!-- ========== FEATURES SECTION ========== -->
+<section id="features" class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="badge-feature">platform deep-dive</span>
+            <h2 class="display-5 fw-bold mt-3 section-title">Everything inside the arena</h2>
+            <p class="col-lg-7 mx-auto text-secondary">From admin monitoring to contest timers – built for students, teachers, and competitive programmers.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4" data-aos="flip-left">
+                <div class="card p-4 h-100">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <i class="bi bi-person-badge fs-1" style="color: var(--primary);"></i>
+                        <h5 class="fw-bold mb-0">Role‑based access</h5>
+                    </div>
+                    <p class="text-secondary mb-0">Admin, user, and contestant roles. Admins manage problems, test cases, and approve contests.</p>
+                </div>
             </div>
-            <div class="row g-4">
-                <!-- feature 1 -->
-                <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-duration="700">
-                    <div class="card p-4 h-100">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <i class="bi bi-person-badge fs-1" style="color: var(--primary);"></i>
-                            <h5 class="fw-bold mb-0">Role‑based access</h5>
-                        </div>
-                        <p class="text-secondary mb-0">Admin, user, and contestant roles. Admins manage problems, test cases, and approve contests.</p>
+            <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="100">
+                <div class="card p-4 h-100">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <i class="bi bi-bar-chart-steps fs-1 text-warning"></i>
+                        <h5 class="fw-bold mb-0">Live leaderboard</h5>
                     </div>
+                    <p class="text-secondary mb-0">Points based on difficulty, tracks solved count, updates instantly during contests.</p>
                 </div>
-                <!-- feature 2 -->
-                <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="100">
-                    <div class="card p-4 h-100">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <i class="bi bi-bar-chart-steps fs-1 text-warning"></i>
-                            <h5 class="fw-bold mb-0">Live leaderboard</h5>
-                        </div>
-                        <p class="text-secondary mb-0">Points based on difficulty, tracks solved count, updates instantly during contests.</p>
+            </div>
+            <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="200">
+                <div class="card p-4 h-100">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <i class="bi bi-clock-history fs-1 text-danger"></i>
+                        <h5 class="fw-bold mb-0">TLE / MLE check</h5>
                     </div>
-                </div>
-                <!-- feature 3 -->
-                <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="200">
-                    <div class="card p-4 h-100">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <i class="bi bi-clock-history fs-1 text-danger"></i>
-                            <h5 class="fw-bold mb-0">TLE / MLE check</h5>
-                        </div>
-                        <p class="text-secondary mb-0">Strict time & memory limits enforced using free compiler API (C++ supported).</p>
-                    </div>
-                </div>
-                <!-- feature 4 -->
-                <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="300">
-                    <div class="card p-4 h-100">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <i class="bi bi-link-45deg fs-1" style="color: #a855f7;"></i>
-                            <h5 class="fw-bold mb-0">Contest via link</h5>
-                        </div>
-                        <p class="text-secondary mb-0">Share unique contest links – participants join instantly without extra steps.</p>
-                    </div>
-                </div>
-                <!-- feature 5 -->
-                <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="400">
-                    <div class="card p-4 h-100">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <i class="bi bi-eyeglasses fs-1 text-info"></i>
-                            <h5 class="fw-bold mb-0">Admin monitoring</h5>
-                        </div>
-                        <p class="text-secondary mb-0">Approve contests, monitor submissions, manage test cases & rankings.</p>
-                    </div>
-                </div>
-                <!-- feature 6 -->
-                <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="500">
-                    <div class="card p-4 h-100">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <i class="bi bi-hourglass-split fs-1 text-secondary"></i>
-                            <h5 class="fw-bold mb-0">Countdown timer</h5>
-                        </div>
-                        <p class="text-secondary mb-0">Real-time countdown for contests – ends automatically and shows remaining time.</p>
-                    </div>
+                    <p class="text-secondary mb-0">Strict time & memory limits enforced using free compiler API (C++ supported).</p>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
     
     <!-- ========== PROBLEMS SECTION ========== -->
 <section class="py-5">
@@ -621,25 +571,6 @@
         </div>
     </section>
 
-    <!-- ========== FOOTER ========== -->
-    <footer class="pt-5 pb-4 mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-5">
-                    <a class="navbar-brand fw-bold fs-3" href="/"><i class="bi bi-code-square me-2 text-primary"></i>CodeArena</a>
-                    <p class="text-secondary small col-lg-8 mt-3">Online programming judge & contest system — built with ASP.NET MVC, SQL Server, and love.</p>
-                    <p class="small text-secondary">© 2025 Team ByteForge: Abdullah, Nazmul, Junayed, Minhaz</p>
-                </div>
-                <div class="col-md-7">
-                    <div class="row">
-                        <div class="col-4"><h6 style="color: var(--text-primary);">Platform</h6><ul class="list-unstyled small"><li><a href="/Problem" class="text-secondary text-decoration-none">Problems</a></li><li><a href="/Contest" class="text-secondary text-decoration-none">Contests</a></li><li><a href="/Ranking" class="text-secondary text-decoration-none">Ranking</a></li></ul></div>
-                        <div class="col-4"><h6 style="color: var(--text-primary);">Support</h6><ul class="list-unstyled small"><li><a href="#" class="text-secondary text-decoration-none">Documentation</a></li><li><a href="#" class="text-secondary text-decoration-none">API</a></li><li><a href="#" class="text-secondary text-decoration-none">Status</a></li></ul></div>
-                        <div class="col-4"><h6 style="color: var(--text-primary);">Team</h6><ul class="list-unstyled small"><li><a href="#" class="text-secondary text-decoration-none">About</a></li><li><a href="#" class="text-secondary text-decoration-none">University</a></li><li><a href="#" class="text-secondary text-decoration-none">Contact</a></li></ul></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
 
     <!-- scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>

@@ -1,3 +1,4 @@
+@model MyMvcApp.Models.SignupViewModel
 @{
     Layout = null;
 }
@@ -13,85 +14,86 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --cf-bg: #f8fafc;
-            --cf-card: #ffffff;
-            --cf-text: #0f172a;
-            --cf-text-secondary: #475569;
-            --cf-border: #e2e8f0;
-            --cf-nav: #0f172a;
-            --cf-primary: #2563eb;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --border-light: #e2e8f0;
+            --primary: #0284c7;
+            --input-bg: #ffffff;
+            --input-text: #0f172a;
+            --input-border: #e2e8f0;
         }
-
         body.dark {
-            --cf-bg: #030712;
-            --cf-card: #111827;
-            --cf-text: #f9fafb;
-            --cf-text-secondary: #9ca3af;
-            --cf-border: #1f2937;
-            --cf-nav: #000000;
-            --cf-primary: #3b82f6;
+            --bg-body: #0b1120;
+            --bg-card: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-light: #334155;
+            --primary: #38bdf8;
+            --input-bg: #2d3a4f;
+            --input-text: #f1f5f9;
+            --input-border: #4b5565;
         }
-
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--cf-bg);
-            color: var(--cf-text);
-            transition: all 0.2s ease;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.2s ease;
             padding: 2rem;
         }
-
         .signup-card {
-            background: var(--cf-card);
-            border: 1px solid var(--cf-border);
-            border-radius: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 24px;
             padding: 2.5rem;
             width: 100%;
-            max-width: 500px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 600px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
         }
-
-        .form-control {
-            background-color: var(--cf-bg);
-            border: 1px solid var(--cf-border);
-            color: var(--cf-text);
-            padding: 0.75rem 1rem;
-            border-radius: 12px;
+        .form-control, .input-group-text {
+            background-color: var(--input-bg);
+            color: var(--input-text);
+            border-color: var(--input-border);
         }
-
         .form-control:focus {
-            border-color: var(--cf-primary);
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+            background-color: var(--input-bg);
+            color: var(--input-text);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
         }
-
-        .btn-signup {
-            background: var(--cf-primary);
-            color: white;
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
             padding: 0.75rem;
-            border-radius: 12px;
-            width: 100%;
-            border: none;
             font-weight: 600;
         }
-
-        .btn-signup:hover {
-            background: #1d4ed8;
-        }
-
         .theme-toggle {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: var(--cf-card);
-            border: 1px solid var(--cf-border);
-            color: var(--cf-text);
-            padding: 0.5rem 1.2rem;
-            border-radius: 30px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 60px;
             cursor: pointer;
             z-index: 1000;
+        }
+        .text-danger {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: block;
+        }
+        .validation-summary-errors ul {
+            color: #dc2626;
+            margin-bottom: 1rem;
+            padding-left: 1rem;
         }
     </style>
 </head>
@@ -100,56 +102,88 @@
         <i class="bi bi-sun-fill me-1"></i> <span id="themeText">Light</span>
     </button>
 
-    <div class="signup-card" data-aos="fade-up">
+    <div class="signup-card">
         <div class="text-center mb-4">
             <a href="/" class="text-decoration-none">
-                <h2 class="fw-bold" style="color: var(--cf-primary);"><i class="bi bi-code-square me-2"></i>CodeArena</h2>
+                <i class="bi bi-code-square" style="font-size: 3rem; color: var(--primary);"></i>
+                <h2 class="fw-bold mt-2" style="color: var(--text-primary);">CodeArena</h2>
             </a>
-            <p class="text-secondary mt-3">Create your account to start coding</p>
+            <p class="text-secondary">Create your account to start coding</p>
         </div>
 
-        <form>
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+        <form method="post" action="/Auth/Signup">
+            @Html.AntiForgeryToken()
+            
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label class="form-label fw500">First Name</label>
-                    <input type="text" class="form-control" placeholder="John">
+                    <label class="form-label">First Name</label>
+                    @Html.TextBoxFor(m => m.FirstName, new { @class = "form-control", placeholder = "John" })
+                    @Html.ValidationMessageFor(m => m.FirstName, "", new { @class = "text-danger" })
                 </div>
                 <div class="col-md-6 mb-3">
-                    <label class="form-label fw500">Last Name</label>
-                    <input type="text" class="form-control" placeholder="Doe">
+                    <label class="form-label">Last Name</label>
+                    @Html.TextBoxFor(m => m.LastName, new { @class = "form-control", placeholder = "Doe" })
+                    @Html.ValidationMessageFor(m => m.LastName, "", new { @class = "text-danger" })
                 </div>
             </div>
+
             <div class="mb-3">
-                <label class="form-label fw500">Username</label>
-                <input type="text" class="form-control" placeholder="johndoe">
+                <label class="form-label">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    @Html.TextBoxFor(m => m.Username, new { @class = "form-control", placeholder = "johndoe" })
+                </div>
+                @Html.ValidationMessageFor(m => m.Username, "", new { @class = "text-danger" })
             </div>
+
             <div class="mb-3">
-                <label class="form-label fw500">Email</label>
-                <input type="email" class="form-control" placeholder="john@example.com">
+                <label class="form-label">Email</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                    @Html.TextBoxFor(m => m.Email, new { @class = "form-control", placeholder = "john@example.com" })
+                </div>
+                @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger" })
             </div>
+
             <div class="mb-3">
-                <label class="form-label fw500">Student ID</label>
-                <input type="text" class="form-control" placeholder="0222310005101078">
+                <label class="form-label">Student ID (Optional)</label>
+                @Html.TextBoxFor(m => m.StudentId, new { @class = "form-control", placeholder = "0222310005101078" })
+                @Html.ValidationMessageFor(m => m.StudentId, "", new { @class = "text-danger" })
             </div>
+
             <div class="mb-3">
-                <label class="form-label fw500">Password</label>
-                <input type="password" class="form-control" placeholder="Create a password">
+                <label class="form-label">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    @Html.PasswordFor(m => m.Password, new { @class = "form-control", placeholder = "Create a password" })
+                </div>
+                @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger" })
             </div>
+
             <div class="mb-4">
-                <label class="form-label fw500">Confirm Password</label>
-                <input type="password" class="form-control" placeholder="Confirm your password">
+                <label class="form-label">Confirm Password</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                    @Html.PasswordFor(m => m.ConfirmPassword, new { @class = "form-control", placeholder = "Confirm your password" })
+                </div>
+                @Html.ValidationMessageFor(m => m.ConfirmPassword, "", new { @class = "text-danger" })
             </div>
+
             <div class="mb-4 form-check">
-                <input type="checkbox" class="form-check-input" id="terms">
-                <label class="form-check-label text-secondary" for="terms">
-                    I agree to the <a href="#" style="color: var(--cf-primary);">Terms of Service</a> and <a href="#" style="color: var(--cf-primary);">Privacy Policy</a>
+                @Html.CheckBoxFor(m => m.AgreeToTerms, new { @class = "form-check-input" })
+                <label class="form-check-label" for="AgreeToTerms">
+                    I agree to the <a href="#" style="color: var(--primary);">Terms of Service</a> and <a href="#" style="color: var(--primary);">Privacy Policy</a>
                 </label>
+                @Html.ValidationMessageFor(m => m.AgreeToTerms, "", new { @class = "text-danger" })
             </div>
-            <button type="submit" class="btn-signup">Create Account</button>
+
+            <button type="submit" class="btn btn-primary w-100 mb-3">Create Account</button>
         </form>
 
         <div class="text-center mt-4">
-            <p class="text-secondary">Already have an account? <a href="/Auth/Login" style="color: var(--cf-primary);" class="text-decoration-none fw600">Log in</a></p>
+            <p class="text-secondary">Already have an account? <a href="/Auth/Login" style="color: var(--primary);" class="text-decoration-none fw600">Log in</a></p>
         </div>
     </div>
 

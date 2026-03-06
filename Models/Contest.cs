@@ -1,3 +1,4 @@
+
 namespace MyMvcApp.Models
 {
     public class Contest

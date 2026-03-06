@@ -1,3 +1,4 @@
+@model MyMvcApp.Models.LoginViewModel
 @{
     Layout = null;
 }
@@ -101,6 +102,17 @@
         }
         .divider::before { margin-right: 1rem; }
         .divider::after { margin-left: 1rem; }
+        .text-danger {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: block;
+        }
+        .validation-summary-errors ul {
+            color: #dc2626;
+            margin-bottom: 1rem;
+            padding-left: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -118,31 +130,48 @@
                 <p class="text-secondary">Welcome back! Please login to your account.</p>
             </div>
 
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
             <form method="post" action="/Auth/Login">
+                @Html.AntiForgeryToken()
+                
                 <div class="mb-3">
                     <label class="form-label">Username or Email</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-person"></i></span>
-                        <input type="text" class="form-control" name="username" required>
+                        @Html.TextBoxFor(m => m.Username, new { @class = "form-control", placeholder = "Enter username or email" })
                     </div>
+                    @Html.ValidationMessageFor(m => m.Username, "", new { @class = "text-danger" })
                 </div>
+                
                 <div class="mb-4">
                     <label class="form-label">Password</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input type="password" class="form-control" name="password" required>
+                        @Html.PasswordFor(m => m.Password, new { @class = "form-control", placeholder = "Enter password" })
                         <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
                             <i class="bi bi-eye" id="toggleIcon"></i>
                         </button>
                     </div>
+                    @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger" })
                 </div>
+                
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="remember">
-                        <label class="form-check-label" for="remember">Remember me</label>
+                        @Html.CheckBoxFor(m => m.RememberMe, new { @class = "form-check-input" })
+                        <label class="form-check-label" for="RememberMe">Remember me</label>
                     </div>
                     <a href="#" class="text-decoration-none" style="color: var(--primary);">Forgot password?</a>
                 </div>
+                
                 <button type="submit" class="btn btn-primary w-100 mb-3">Login</button>
             </form>
 
@@ -165,7 +194,7 @@
 
     <script>
         function togglePassword() {
-            const password = document.querySelector('input[name="password"]');
+            const password = document.querySelector('input[name="Password"]');
             const icon = document.getElementById('toggleIcon');
             if (password.type === 'password') {
                 password.type = 'text';
