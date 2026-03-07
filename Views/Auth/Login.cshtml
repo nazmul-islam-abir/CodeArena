@@ -1,6 +1,7 @@
 @model MyMvcApp.Models.LoginViewModel
 @{
-    Layout = null;
+    ViewData["Title"] = "Ranking Page";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <!DOCTYPE html>
@@ -24,17 +25,7 @@
             --input-text: #0f172a;
             --input-border: #e2e8f0;
         }
-        body.dark {
-            --bg-body: #0b1120;
-            --bg-card: #1e293b;
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
-            --border-light: #334155;
-            --primary: #38bdf8;
-            --input-bg: #2d3a4f;
-            --input-text: #f1f5f9;
-            --input-border: #4b5565;
-        }
+        
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-body);
@@ -77,18 +68,6 @@
             padding: 0.75rem;
             font-weight: 600;
         }
-        .theme-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-light);
-            color: var(--text-primary);
-            padding: 0.5rem 1rem;
-            border-radius: 60px;
-            cursor: pointer;
-            z-index: 1000;
-        }
         .divider {
             display: flex;
             align-items: center;
@@ -116,9 +95,7 @@
     </style>
 </head>
 <body>
-    <button class="theme-toggle" id="themeToggle">
-        <i class="bi bi-sun-fill me-1"></i> <span id="themeText">Light</span>
-    </button>
+    
 
     <div class="auth-container">
         <div class="auth-card">
@@ -207,28 +184,6 @@
             }
         }
 
-        const toggleBtn = document.getElementById('themeToggle');
-        const themeText = document.getElementById('themeText');
-        const body = document.body;
-
-        if (localStorage.getItem('theme') === 'dark') {
-            body.classList.add('dark');
-            themeText.innerText = 'Dark';
-            toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
-        }
-
-        toggleBtn.addEventListener('click', () => {
-            body.classList.toggle('dark');
-            if (body.classList.contains('dark')) {
-                localStorage.setItem('theme', 'dark');
-                themeText.innerText = 'Dark';
-                toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
-            } else {
-                localStorage.setItem('theme', 'light');
-                themeText.innerText = 'Light';
-                toggleBtn.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Light';
-            }
-        });
     </script>
 </body>
 </html>

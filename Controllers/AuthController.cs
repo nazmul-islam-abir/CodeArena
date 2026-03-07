@@ -172,6 +172,64 @@ namespace MyMvcApp.Controllers
             }
         }
 
+        [HttpGet]
+        public IActionResult Profile()
+        {
+            // Check if user is logged in
+            var userId = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(userId))
+            {
+                TempData["ErrorMessage"] = "Please login to view your profile.";
+                return RedirectToAction("Login");
+            }
+
+            try
+            {
+                using var conn = new NpgsqlConnection(_connectionString);
+                conn.Open();
+
+                var query = @"
+                    SELECT id, first_name, last_name, username, email, student_id, 
+                           created_at, last_login_at, role
+                    FROM users 
+                    WHERE id = @id";
+
+                using var cmd = new NpgsqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@id", int.Parse(userId));
+
+                using var reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    var profile = new ProfileViewModel
+                    {
+                        Id = reader.GetInt32(0),
+                        FirstName = reader.GetString(1),
+                        LastName = reader.GetString(2),
+                        Username = reader.GetString(3),
+                        Email = reader.GetString(4),
+                        StudentId = reader.IsDBNull(5) ? null : reader.GetString(5),
+                        CreatedAt = reader.GetDateTime(6),
+                        LastLoginAt = reader.IsDBNull(7) ? null : reader.GetDateTime(7),
+                        Role = reader.GetString(8),
+                        
+                        // For demo purposes - in real app, calculate from database
+                        ProblemsSolved = 12,
+                        ContestsParticipated = 5,
+                        TotalPoints = 450
+                    };
+
+                    return View(profile);
+                }
+
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Error loading profile: " + ex.Message;
+                return RedirectToAction("Index", "Home");
+            }
+        }
+
         [HttpPost]
         public IActionResult Logout()
         {

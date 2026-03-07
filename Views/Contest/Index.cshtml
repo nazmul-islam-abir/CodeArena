@@ -332,28 +332,7 @@
         };
 
         // Theme toggle
-        const toggleBtn = document.getElementById('themeToggle');
-        const themeText = document.getElementById('themeText');
-        const body = document.body;
-
-        if (localStorage.getItem('theme') === 'dark') {
-            body.classList.add('dark');
-            themeText.innerText = 'Dark';
-            toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
-        }
-
-        toggleBtn.addEventListener('click', () => {
-            body.classList.toggle('dark');
-            if (body.classList.contains('dark')) {
-                localStorage.setItem('theme', 'dark');
-                themeText.innerText = 'Dark';
-                toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
-            } else {
-                localStorage.setItem('theme', 'light');
-                themeText.innerText = 'Light';
-                toggleBtn.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Light';
-            }
-        });
+       
     </script>
 </body>
 </html>

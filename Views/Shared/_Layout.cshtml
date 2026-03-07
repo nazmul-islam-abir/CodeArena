@@ -136,8 +136,9 @@
                                 <span>@Context.Session.GetString("Username")</span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="#"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
+                                <li><a class="dropdown-item" href="/Auth/Profile"><i class="bi bi-person-circle me-2"></i>My Profile</a></li>
                                 <li><a class="dropdown-item" href="/Contest/MyContests"><i class="bi bi-trophy me-2"></i>My Contests</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form method="post" action="/Auth/Logout" class="m-0">
@@ -202,34 +203,115 @@
             </div>
         </div>
     </footer>
+    <!-- In _Layout.cshtml, replace the script section at the bottom with: -->
+<!-- In _Layout.cshtml, replace the entire script section with: -->
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Theme toggle
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Single source of truth for theme management
+    (function() {
+        // Theme management
         const toggleBtn = document.getElementById('themeToggle');
         const themeText = document.getElementById('themeText');
         const body = document.body;
 
-        if (localStorage.getItem('theme') === 'dark') {
-            body.classList.add('dark');
-            themeText.innerText = 'Dark';
-            toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                body.classList.add('dark');
+                if (themeText) themeText.innerText = 'Dark';
+                if (toggleBtn) toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('dark');
+                if (themeText) themeText.innerText = 'Light';
+                if (toggleBtn) toggleBtn.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Light';
+                localStorage.setItem('theme', 'light');
+            }
+            
+            // Dispatch custom event for other components
+            document.dispatchEvent(new CustomEvent('themeChanged', { 
+                detail: { theme: theme } 
+            }));
         }
 
-        toggleBtn.addEventListener('click', () => {
-            body.classList.toggle('dark');
-            if (body.classList.contains('dark')) {
-                localStorage.setItem('theme', 'dark');
-                themeText.innerText = 'Dark';
-                toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
-            } else {
-                localStorage.setItem('theme', 'light');
-                themeText.innerText = 'Light';
-                toggleBtn.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Light';
+        // Initialize theme from localStorage
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+
+        // Theme toggle click handler
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+                setTheme(newTheme);
+            });
+        }
+
+        // Bootstrap components initialization
+        function initBootstrapComponents() {
+            // Initialize all dropdowns
+            document.querySelectorAll('.dropdown-toggle').forEach(function(dropdownToggle) {
+                // Check if it's already initialized
+                if (!dropdownToggle.getAttribute('aria-expanded')) {
+                    try {
+                        new bootstrap.Dropdown(dropdownToggle);
+                    } catch (e) {
+                        // Ignore if already initialized
+                    }
+                }
+            });
+
+            // Initialize tooltips if any
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(tooltipTrigger) {
+                try {
+                    new bootstrap.Tooltip(tooltipTrigger);
+                } catch (e) {}
+            });
+
+            // Initialize popovers if any
+            document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function(popoverTrigger) {
+                try {
+                    new bootstrap.Popover(popoverTrigger);
+                } catch (e) {}
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initBootstrapComponents();
+        });
+
+        // Watch for dynamically added elements
+        const observer = new MutationObserver(function(mutations) {
+            let shouldReinit = false;
+            
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length) {
+                    for (let node of mutation.addedNodes) {
+                        if (node.nodeType === 1) { // Element node
+                            if (node.classList && (
+                                node.classList.contains('dropdown-toggle') ||
+                                node.querySelectorAll('.dropdown-toggle').length > 0
+                            )) {
+                                shouldReinit = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+            
+            if (shouldReinit) {
+                setTimeout(initBootstrapComponents, 100);
             }
         });
-    </script>
-    
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    })();
+</script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

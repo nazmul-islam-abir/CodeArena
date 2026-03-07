@@ -1,6 +1,7 @@
 @model MyMvcApp.Models.SignupViewModel
 @{
-    Layout = null;
+    ViewData["Title"] = "Ranking Page";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <!DOCTYPE html>
@@ -35,16 +36,15 @@
             --input-text: #f1f5f9;
             --input-border: #4b5565;
         }
+        
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-body);
             color: var(--text-primary);
             min-height: 100vh;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
             transition: all 0.2s ease;
-            padding: 2rem;
         }
         .signup-card {
             background: var(--bg-card);
@@ -72,18 +72,6 @@
             padding: 0.75rem;
             font-weight: 600;
         }
-        .theme-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-light);
-            color: var(--text-primary);
-            padding: 0.5rem 1rem;
-            border-radius: 60px;
-            cursor: pointer;
-            z-index: 1000;
-        }
         .text-danger {
             color: #dc2626;
             font-size: 0.875rem;
@@ -95,12 +83,17 @@
             margin-bottom: 1rem;
             padding-left: 1rem;
         }
+        .Signup-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
     </style>
 </head>
 <body>
-    <button class="theme-toggle" id="themeToggle">
-        <i class="bi bi-sun-fill me-1"></i> <span id="themeText">Light</span>
-    </button>
+    <div class="Signup-container">
 
     <div class="signup-card">
         <div class="text-center mb-4">
@@ -186,30 +179,7 @@
             <p class="text-secondary">Already have an account? <a href="/Auth/Login" style="color: var(--primary);" class="text-decoration-none fw600">Log in</a></p>
         </div>
     </div>
+    </div>
 
-    <script>
-        const toggleBtn = document.getElementById('themeToggle');
-        const themeText = document.getElementById('themeText');
-        const body = document.body;
-
-        if (localStorage.getItem('theme') === 'dark') {
-            body.classList.add('dark');
-            themeText.innerText = 'Dark';
-            toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
-        }
-
-        toggleBtn.addEventListener('click', () => {
-            body.classList.toggle('dark');
-            if (body.classList.contains('dark')) {
-                localStorage.setItem('theme', 'dark');
-                themeText.innerText = 'Dark';
-                toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
-            } else {
-                localStorage.setItem('theme', 'light');
-                themeText.innerText = 'Light';
-                toggleBtn.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Light';
-            }
-        });
-    </script>
 </body>
 </html>

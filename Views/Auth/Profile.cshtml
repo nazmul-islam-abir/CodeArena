@@ -1,0 +1,721 @@
+@model MyMvcApp.Models.ProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5">
+    <!-- Profile Header with Cover -->
+    <div class="profile-cover mb-4">
+        <div class="cover-image"></div>
+        <div class="profile-header-content">
+            <div class="avatar-wrapper">
+                <div class="avatar-circle">
+                    @Model.FirstName.Substring(0, 1)@Model.LastName.Substring(0, 1)
+                </div>
+                <span class="role-badge @Model.Role.ToLower()">@Model.Role</span>
+            </div>
+            <div class="profile-title">
+                <h1 class="display-6 fw-bold mb-1" style="color: var(--text-primary);">@Model.FullName</h1>
+                <p class="text-secondary mb-2">@@@Model.Username</p>
+                <div class="d-flex gap-3 justify-content-center justify-content-md-start">
+                    <span class="badge-feature"><i class="bi bi-calendar3 me-1"></i>Joined @Model.MemberSince</span>
+                    <span class="badge-feature"><i class="bi bi-clock-history me-1"></i>Last active @Model.LastActive</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column - Stats & Info -->
+        <div class="col-lg-4">
+            <!-- Stats Cards -->
+            <div class="stats-grid mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon solved">
+                        <i class="bi bi-check2-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="fw-bold mb-0" style="color: var(--text-primary);">@Model.ProblemsSolved</h3>
+                        <small style="color: var(--text-secondary);">Problems Solved</small>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon contests">
+                        <i class="bi bi-trophy"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="fw-bold mb-0" style="color: var(--text-primary);">@Model.ContestsParticipated</h3>
+                        <small style="color: var(--text-secondary);">Contests</small>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon points">
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="fw-bold mb-0" style="color: var(--text-primary);">@Model.TotalPoints</h3>
+                        <small style="color: var(--text-secondary);">Total Points</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information Card -->
+            <div class="card info-card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-info-circle me-2 text-primary"></i>
+                    <h5 class="fw-bold mb-0" style="color: var(--text-primary);">Contact Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="info-item">
+                        <div class="info-icon">
+                            <i class="bi bi-envelope-fill"></i>
+                        </div>
+                        <div class="info-content">
+                            <small style="color: var(--text-secondary);">Email Address</small>
+                            <p class="mb-0 fw-medium" style="color: var(--text-primary);">@Model.Email</p>
+                        </div>
+                    </div>
+                    
+                    @if (!string.IsNullOrEmpty(Model.StudentId))
+                    {
+                        <div class="info-item">
+                            <div class="info-icon">
+                                <i class="bi bi-person-badge-fill"></i>
+                            </div>
+                            <div class="info-content">
+                                <small style="color: var(--text-secondary);">Student ID</small>
+                                <p class="mb-0 fw-medium" style="color: var(--text-primary);">@Model.StudentId</p>
+                            </div>
+                        </div>
+                    }
+                    
+                    <div class="info-item">
+                        <div class="info-icon">
+                            <i class="bi bi-calendar-check-fill"></i>
+                        </div>
+                        <div class="info-content">
+                            <small style="color: var(--text-secondary);">Member Since</small>
+                            <p class="mb-0 fw-medium" style="color: var(--text-primary);">@Model.MemberSince</p>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-icon">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <div class="info-content">
+                            <small style="color: var(--text-secondary);">Last Active</small>
+                            <p class="mb-0 fw-medium" style="color: var(--text-primary);">@Model.LastActive</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Achievement Badges -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-award me-2 text-warning"></i>
+                    <h5 class="fw-bold mb-0" style="color: var(--text-primary);">Achievements</h5>
+                </div>
+                <div class="card-body">
+                    <div class="achievement-grid">
+                        <div class="achievement-item">
+                            <div class="achievement-icon beginner">
+                                <i class="bi bi-emoji-smile"></i>
+                            </div>
+                            <span style="color: var(--text-secondary);">Beginner</span>
+                        </div>
+                        <div class="achievement-item">
+                            <div class="achievement-icon solver @(Model.ProblemsSolved >= 10 ? "unlocked" : "locked")">
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                            <span style="color: var(--text-secondary);">10 Problems</span>
+                        </div>
+                        <div class="achievement-item">
+                            <div class="achievement-icon contest @(Model.ContestsParticipated >= 5 ? "unlocked" : "locked")">
+                                <i class="bi bi-trophy"></i>
+                            </div>
+                            <span style="color: var(--text-secondary);">5 Contests</span>
+                        </div>
+                        <div class="achievement-item">
+                            <div class="achievement-icon streak @(Model.ProblemsSolved >= 30 ? "unlocked" : "locked")">
+                                <i class="bi bi-fire"></i>
+                            </div>
+                            <span style="color: var(--text-secondary);">Streak</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Account & Activity -->
+        <div class="col-lg-8">
+            <!-- Account Settings Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-gear me-2 text-primary"></i>
+                    <h5 class="fw-bold mb-0" style="color: var(--text-primary);">Account Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="/Auth/UpdateProfile">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" style="color: var(--text-primary);">First Name</label>
+                                <input type="text" class="form-control profile-input" value="@Model.FirstName" readonly disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" style="color: var(--text-primary);">Last Name</label>
+                                <input type="text" class="form-control profile-input" value="@Model.LastName" readonly disabled>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <label class="form-label" style="color: var(--text-primary);">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="color: var(--text-primary);">@@</span>
+                                <input type="text" class="form-control profile-input" value="@Model.Username" readonly disabled>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <label class="form-label" style="color: var(--text-primary);">Email</label>
+                            <input type="email" class="form-control profile-input" value="@Model.Email" readonly disabled>
+                        </div>
+
+                        <div class="mt-3">
+                            <label class="form-label" style="color: var(--text-primary);">Student ID</label>
+                            <input type="text" class="form-control profile-input" value="@Model.StudentId" readonly disabled>
+                        </div>
+
+                        <div class="alert alert-info mt-4 d-flex align-items-center">
+                            <i class="bi bi-info-circle-fill me-3 fs-4"></i>
+                            <div>
+                                <strong style="color: var(--text-primary);">Profile editing will be available in a future update.</strong>
+                                <p class="mb-0 small mt-1" style="color: var(--text-secondary);">You can still update your email and password through account settings.</p>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recent Activity Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-activity me-2 text-success"></i>
+                    <h5 class="fw-bold mb-0" style="color: var(--text-primary);">Recent Activity</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="activity-timeline">
+                        <div class="activity-item">
+                            <div class="activity-icon solved">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="fw-bold mb-1" style="color: var(--text-primary);">Solved "Sum of Two Numbers"</h6>
+                                    <span class="activity-time">2h ago</span>
+                                </div>
+                                <p class="small mb-0" style="color: var(--text-secondary);">Problem #101 • Easy • +10 points</p>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon contest">
+                                <i class="bi bi-trophy-fill"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="fw-bold mb-1" style="color: var(--text-primary);">Participated in "CodeArena Weekly #42"</h6>
+                                    <span class="activity-time">Yesterday</span>
+                                </div>
+                                <p class="small mb-0" style="color: var(--text-secondary);">Ranked #23 • Solved 3/5 problems</p>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon solved">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="fw-bold mb-1" style="color: var(--text-primary);">Solved "Factorial"</h6>
+                                    <span class="activity-time">3d ago</span>
+                                </div>
+                                <p class="small mb-0" style="color: var(--text-secondary);">Problem #203 • Medium • +30 points</p>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon solved">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="fw-bold mb-1" style="color: var(--text-primary);">Solved "Even or Odd"</h6>
+                                    <span class="activity-time">5d ago</span>
+                                </div>
+                                <p class="small mb-0" style="color: var(--text-secondary);">Problem #102 • Easy • +10 points</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Profile Cover */
+    .profile-cover {
+        position: relative;
+        border-radius: 24px;
+        overflow: hidden;
+        background: var(--bg-card);
+        border: 1px solid var(--border-light);
+    }
+
+    .cover-image {
+        height: 150px;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        position: relative;
+    }
+
+    .cover-image::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+    }
+
+    body.dark .cover-image {
+        background: linear-gradient(135deg, #1e40af, #5b21b6);
+    }
+
+    .profile-header-content {
+        padding: 0 2rem 2rem 2rem;
+        display: flex;
+        align-items: flex-end;
+        gap: 2rem;
+        position: relative;
+    }
+
+    .avatar-wrapper {
+        position: relative;
+        margin-top: -50px;
+    }
+
+    .avatar-circle {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        font-weight: 600;
+        color: white;
+        border: 4px solid var(--bg-card);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .role-badge {
+        position: absolute;
+        bottom: 10px;
+        right: -10px;
+        padding: 0.4rem 1rem;
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        background: var(--bg-card);
+        border: 2px solid var(--border-light);
+        color: var(--text-primary);
+    }
+
+    .role-badge.admin {
+        background: linear-gradient(135deg, #dc2626, #991b1b);
+        color: white;
+        border: none;
+    }
+
+    .role-badge.user {
+        background: linear-gradient(135deg, #2563eb, #1e3a8a);
+        color: white;
+        border: none;
+    }
+
+    body.dark .role-badge:not(.admin):not(.user) {
+        background: var(--bg-card);
+        color: var(--text-primary);
+        border-color: var(--border-light);
+    }
+
+    .profile-title {
+        flex: 1;
+        padding-bottom: 0.5rem;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+
+    .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: 20px;
+        padding: 1.2rem 1rem;
+        text-align: center;
+        transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 24px;
+    }
+
+    .stat-icon.solved {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .stat-icon.contests {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .stat-icon.points {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8b5cf6;
+    }
+
+    body.dark .stat-icon.solved {
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+    }
+
+    body.dark .stat-icon.contests {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+    }
+
+    body.dark .stat-icon.points {
+        background: rgba(139, 92, 246, 0.2);
+        color: #a78bfa;
+    }
+
+    .stat-content h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Info Card */
+    .info-card .card-header,
+    .card .card-header {
+        background: transparent;
+        border-bottom: 1px solid var(--border-light);
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-light);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        font-size: 1.2rem;
+    }
+
+    .info-content {
+        flex: 1;
+    }
+
+    /* Achievements */
+    .achievement-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+
+    .achievement-item {
+        text-align: center;
+    }
+
+    .achievement-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 30px;
+        background: var(--bg-body);
+        border: 2px solid var(--border-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin: 0 auto 0.5rem;
+        color: var(--text-secondary);
+        transition: all 0.2s;
+    }
+
+    .achievement-icon.unlocked {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border-color: #f59e0b;
+        color: white;
+    }
+
+    .achievement-icon.beginner {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border-color: #10b981;
+        color: white;
+    }
+
+    .achievement-icon.locked {
+        opacity: 0.5;
+    }
+
+    body.dark .achievement-icon:not(.unlocked):not(.beginner) {
+        background: var(--bg-card);
+        border-color: var(--border-light);
+        color: var(--text-secondary);
+    }
+
+    /* Profile Input */
+    .profile-input {
+        background-color: var(--bg-body) !important;
+        border: 1px solid var(--border-light);
+        color: var(--text-primary) !important;
+        padding: 0.75rem 1rem;
+    }
+
+    .profile-input:focus {
+        background-color: var(--bg-body);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .profile-input:disabled, .profile-input[readonly] {
+        background-color: var(--bg-body) !important;
+        color: var(--text-secondary) !important;
+        cursor: not-allowed;
+        opacity: 0.8;
+    }
+
+    .input-group-text {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-light);
+        color: var(--text-secondary);
+    }
+
+    body.dark .input-group-text {
+        background-color: var(--bg-card);
+        color: var(--text-primary);
+        border-color: var(--border-light);
+    }
+
+    /* Form labels */
+    .form-label {
+        color: var(--text-primary) !important;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Activity Timeline */
+    .activity-timeline {
+        padding: 1rem 0;
+    }
+
+    .activity-item {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-light);
+        transition: background-color 0.2s;
+    }
+
+    .activity-item:hover {
+        background-color: var(--table-row-hover);
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .activity-icon.solved {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .activity-icon.contest {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    body.dark .activity-icon.solved {
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+    }
+
+    body.dark .activity-icon.contest {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-time {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        background: var(--bg-body);
+        padding: 0.2rem 0.8rem;
+        border-radius: 30px;
+        border: 1px solid var(--border-light);
+    }
+
+    body.dark .activity-time {
+        background: var(--bg-card);
+        color: var(--text-secondary);
+        border-color: var(--border-light);
+    }
+
+    /* Badge Feature */
+    .badge-feature {
+        background: var(--primary-light);
+        color: var(--text-primary);
+        padding: 0.4rem 1rem;
+        border-radius: 30px;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--border-light);
+    }
+
+    body.dark .badge-feature {
+        background: var(--primary-light);
+        color: var(--text-primary);
+        border-color: var(--border-light);
+    }
+
+    /* Alert */
+    .alert-info {
+        background: var(--primary-light);
+        border: 1px solid var(--border-light);
+        border-radius: 16px;
+    }
+
+    body.dark .alert-info {
+        background: #1e293b;
+        border-color: var(--border-light);
+    }
+
+    body.dark .alert-info strong {
+        color: var(--text-primary);
+    }
+
+    /* Text colors */
+    .text-primary {
+        color: var(--text-primary) !important;
+    }
+
+    .text-secondary {
+        color: var(--text-secondary) !important;
+    }
+
+    /* Card body text */
+    .card-body {
+        color: var(--text-primary);
+    }
+
+    /* Ensure all text elements use theme variables */
+    h1, h2, h3, h4, h5, h6, p, span, small, strong {
+        color: inherit;
+    }
+
+    /* Specific fixes for dark mode */
+    body.dark .card {
+        background-color: var(--bg-card);
+        color: var(--text-primary);
+    }
+
+    body.dark .stat-card small,
+    body.dark .info-item small,
+    body.dark .achievement-item span,
+    body.dark .activity-content p {
+        color: var(--text-secondary) !important;
+    }
+
+    body.dark .info-item p,
+    body.dark .activity-content h6 {
+        color: var(--text-primary) !important;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .profile-header-content {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 0 1rem 1.5rem;
+        }
+
+        .avatar-wrapper {
+            margin-top: -60px;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .achievement-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>

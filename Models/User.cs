@@ -88,4 +88,23 @@ namespace MyMvcApp.Models
         [Display(Name = "I agree to the Terms of Service")]
         public bool AgreeToTerms { get; set; }
     }
+
+    public class ProfileViewModel
+    {
+        public int Id { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string Username { get; set; }
+        public string Email { get; set; }
+        public string StudentId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? LastLoginAt { get; set; }
+        public string Role { get; set; }
+        public int ProblemsSolved { get; set; }
+        public int ContestsParticipated { get; set; }
+        public int TotalPoints { get; set; }
+        public string FullName => $"{FirstName} {LastName}";
+        public string MemberSince => CreatedAt.ToString("MMMM yyyy");
+        public string LastActive => LastLoginAt?.ToString("MMM dd, yyyy") ?? "Never";
+    }
 }

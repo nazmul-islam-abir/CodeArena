@@ -18,7 +18,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/eclipse.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
     <style>
         :root {
             --cf-bg: #f8fafc;
@@ -534,7 +533,7 @@ int main() {
 
 
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+   
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
@@ -553,7 +552,7 @@ int main() {
             indentUnit: 4,
             tabSize: 4,
             lineWrapping: true,
-            theme: 'eclipse',
+            theme: document.body.classList.contains('dark') ? 'dracula' : 'eclipse',
             mode: 'text/x-c++src',
             extraKeys: {
                 'Ctrl-Space': 'autocomplete',
@@ -608,32 +607,27 @@ int main() {
             document.getElementById('languageInfo').textContent = info;
         }
 
-        // Theme toggle
-        const toggleBtn = document.getElementById('themeToggle');
-        const themeText = document.getElementById('themeText');
-        const body = document.body;
-
-        if (localStorage.getItem('theme') === 'dark') {
-            body.classList.add('dark');
-            themeText.innerText = 'Dark';
-            toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
-            editor.setOption('theme', 'dracula');
+        // Sync CodeMirror theme with body class (for theme toggle from layout)
+        function syncEditorTheme() {
+            if (editor) {
+                const isDark = document.body.classList.contains('dark');
+                editor.setOption('theme', isDark ? 'dracula' : 'eclipse');
+            }
         }
 
-        toggleBtn.addEventListener('click', () => {
-            body.classList.toggle('dark');
-            if (body.classList.contains('dark')) {
-                localStorage.setItem('theme', 'dark');
-                themeText.innerText = 'Dark';
-                toggleBtn.innerHTML = '<i class="bi bi-moon-stars-fill me-1"></i> Dark';
-                editor.setOption('theme', 'dracula');
-            } else {
-                localStorage.setItem('theme', 'light');
-                themeText.innerText = 'Light';
-                toggleBtn.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Light';
-                editor.setOption('theme', 'eclipse');
-            }
+        // Initial sync
+        syncEditorTheme();
+
+        // Watch for theme changes from layout toggle
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'class') {
+                    syncEditorTheme();
+                }
+            });
         });
+
+        observer.observe(document.body, { attributes: true });
 
         // Reset code
         document.getElementById('resetCode').addEventListener('click', () => {
@@ -737,6 +731,32 @@ int main() {
             runSpinner.classList.add('d-none');
             </text>
         }
+        document.addEventListener('DOMContentLoaded', function() {
+    // Small delay to ensure everything is loaded
+    setTimeout(function() {
+        // Reinitialize dropdowns
+        var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+        dropdownElementList.forEach(function(dropdownToggleEl) {
+            // Check if dropdown is already initialized
+            if (!dropdownToggleEl.getAttribute('aria-expanded')) {
+                new bootstrap.Dropdown(dropdownToggleEl);
+            }
+        });
+    }, 500);
+});
+
+// Also reinitialize when any AJAX or form submission completes
+document.getElementById('compilerForm')?.addEventListener('submit', function() {
+    // Small delay after form submission to reinitialize
+    setTimeout(function() {
+        var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+        dropdownElementList.forEach(function(dropdownToggleEl) {
+            if (!dropdownToggleEl.getAttribute('aria-expanded')) {
+                new bootstrap.Dropdown(dropdownToggleEl);
+            }
+        });
+    }, 1000);
+});
     </script>
 </body>
 </html>
