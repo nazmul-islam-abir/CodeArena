@@ -1,0 +1,261 @@
+@model MyMvcApp.Models.Submission
+@{
+    ViewData["Title"] = "Submission #" + @Model.Id;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    bool isPending = ViewBag.IsPending == true;
+}
+<div class="container py-4">
+    <!-- Back Button -->
+    <a href="javascript:history.back()" class="btn btn-outline-theme mb-4">
+        <i class="bi bi-arrow-left me-2"></i>Back
+    </a>
+
+    @if (isPending)
+    {
+        <div class="alert alert-info mb-4 text-center">
+            <div class="d-flex flex-column align-items-center">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5 class="mb-2">Your submission is being judged...</h5>
+                <p class="mb-0">This page will automatically refresh when the verdict is ready.</p>
+                <div class="mt-3">
+                    <div class="progress" style="width: 200px; height: 4px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <meta http-equiv="refresh" content="3">
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Submission Info Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="fw-bold mb-0">Submission #@Model.Id</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="text-secondary">Problem:</td>
+                                    <td>
+                                        <a href="/Problem/@Model.ProblemId" class="fw-bold" style="color: var(--primary);">
+                                            @Model.ProblemTitle
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">User:</td>
+                                    <td>
+                                        <i class="bi bi-person-circle me-1"></i>@Model.UserName
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Language:</td>
+                                    <td>@Model.LanguageName</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Submitted:</td>
+                                    <td>@Model.SubmittedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="text-secondary">Verdict:</td>
+                                    <td>
+                                        @if (Model.Verdict == "AC")
+                                        {
+                                            <span class="badge bg-success fs-6">Accepted</span>
+                                        }
+                                        else if (Model.Verdict == "WA")
+                                        {
+                                            <span class="badge bg-danger fs-6">Wrong Answer</span>
+                                        }
+                                        else if (Model.Verdict == "TLE")
+                                        {
+                                            <span class="badge bg-warning fs-6">Time Limit Exceeded</span>
+                                        }
+                                        else if (Model.Verdict == "MLE")
+                                        {
+                                            <span class="badge bg-info fs-6">Memory Limit Exceeded</span>
+                                        }
+                                        else if (Model.Verdict == "RE")
+                                        {
+                                            <span class="badge bg-danger fs-6">Runtime Error</span>
+                                        }
+                                        else if (Model.Verdict == "CE")
+                                        {
+                                            <span class="badge bg-secondary fs-6">Compilation Error</span>
+                                        }
+                                        else if (string.IsNullOrEmpty(Model.Verdict) || Model.Verdict == "Processing")
+                                        {
+                                            <span class="badge bg-warning fs-6">Processing...</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary fs-6">@Model.Verdict</span>
+                                        }
+                                    </td>
+                                </tr>
+                                @if (Model.ExecutionTime.HasValue)
+                                {
+                                    <tr>
+                                        <td class="text-secondary">Execution Time:</td>
+                                        <td>
+                                            @if (Model.ExecutionTime.Value < 0.001)
+                                            {
+                                                <span>@((Model.ExecutionTime.Value * 1000).ToString("F0")) μs</span>
+                                            }
+                                            else if (Model.ExecutionTime.Value < 0.01)
+                                            {
+                                                <span>@((Model.ExecutionTime.Value * 1000).ToString("F0")) μs</span>
+                                            }
+                                            else if (Model.ExecutionTime.Value < 1)
+                                            {
+                                                <span>@(Model.ExecutionTime.Value.ToString("F3")) s</span>
+                                            }
+                                            else
+                                            {
+                                                <span>@(Model.ExecutionTime.Value.ToString("F2")) s</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                                @if (Model.MemoryUsed.HasValue)
+                                {
+                                    <tr>
+                                        <td class="text-secondary">Memory Used:</td>
+                                        <td>
+                                            @if (Model.MemoryUsed.Value < 1024)
+                                            {
+                                                <span>@Model.MemoryUsed.Value KB</span>
+                                            }
+                                            else
+                                            {
+                                                <span>@((Model.MemoryUsed.Value / 1024.0).ToString("F1")) MB</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                                @if (Model.TestCasesPassed.HasValue && Model.TotalTestCases.HasValue)
+                                {
+                                    <tr>
+                                        <td class="text-secondary">Test Cases:</td>
+                                        <td>@Model.TestCasesPassed / @Model.TotalTestCases passed</td>
+                                    </tr>
+                                }
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Source Code Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-file-code me-2 text-primary"></i>Source Code</h5>
+                </div>
+                <div class="card-body p-0">
+                    <pre class="mb-0 p-3" style="background-color: #1e1e1e; color: #d4d4d4; overflow-x: auto; border-radius: 0 0 8px 8px; font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; line-height: 1.6;"><code>@Model.SourceCode</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="fw-bold mb-0">Actions</h5>
+                </div>
+                <div class="card-body">
+                    <a href="/Compiler?problemId=@Model.ProblemId" class="btn btn-primary w-100 mb-2">
+                        <i class="bi bi-arrow-repeat me-2"></i>Resubmit Solution
+                    </a>
+                    <a href="/Problem/@Model.ProblemId" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="bi bi-eye me-2"></i>View Problem
+                    </a>
+                    <button class="btn btn-outline-secondary w-100" onclick="copyCode()">
+                        <i class="bi bi-clipboard me-2"></i>Copy Code
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyCode() {
+        const code = `@Model.SourceCode.Replace("`", "\\`").Replace("\n", "\\n").Replace("\r", "")`;
+        navigator.clipboard.writeText(code).then(() => {
+            alert('Code copied to clipboard!');
+        }).catch(err => {
+            alert('Failed to copy code: ' + err);
+        });
+    }
+</script>
+
+<style>
+    .card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: 16px;
+    }
+
+    .card-header {
+        background-color: transparent;
+        border-bottom: 1px solid var(--border-light);
+        padding: 1.25rem 1.5rem;
+    }
+
+    .table {
+        color: var(--text-primary) !important;
+    }
+
+        .table td {
+            border: none;
+            padding: 0.5rem;
+        }
+
+        .table tr td:first-child {
+            color: var(--text-secondary);
+            width: 40%;
+        }
+
+    .badge {
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+    }
+
+    .btn-outline-theme {
+        border-color: var(--border-light);
+        color: var(--text-primary);
+    }
+
+        .btn-outline-theme:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+    pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        margin: 0;
+    }
+
+    body.dark pre {
+        background-color: #1e1e1e !important;
+        color: #d4d4d4 !important;
+    }
+
+    .progress-bar-animated {
+        animation: progress-bar-stripes 1s linear infinite;
+    }
+</style>

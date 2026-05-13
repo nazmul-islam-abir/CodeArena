@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -119,7 +119,22 @@
                     <li class="nav-item"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Problem" ? "active" : "")" href="/Problem">Problems</a></li>
                     <li class="nav-item"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Contest" ? "active" : "")" href="/Contest">Contests</a></li>
                     <li class="nav-item"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Ranking" ? "active" : "")" href="/Ranking">Ranking</a></li>
-                    <li class="nav-item"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Compiler" ? "active" : "")" href="/Compiler">Compiler</a></li>
+                    <li class="nav-item"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Submissions" ? "active" : "")" href="/Submissions">Submissions</a></li>
+                    <!-- Compiler is accessible only when solving a problem, remove top-level nav link -->
+                    @if (Context.Session.GetString("UserRole") == "Admin")
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                Admin
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/Admin/Problems"><i class="bi bi-gear me-2"></i>Manage Problems</a></li>
+                                <li><a class="dropdown-item" href="/Admin/Codeforces"><i class="bi bi-cloud-download me-2"></i>Import Problems</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/Auth/Profile"><i class="bi bi-people me-2"></i>User Management</a></li>
+                            </ul>
+                        </li>
+                    }
                 </ul>
                 <div class="d-flex gap-3 align-items-center">
                     <button class="theme-toggle" id="themeToggle">
@@ -137,7 +152,6 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="/Auth/Profile"><i class="bi bi-person-circle me-2"></i>My Profile</a></li>
-                                <li><a class="dropdown-item" href="/Contest/MyContests"><i class="bi bi-trophy me-2"></i>My Contests</a></li>
                                 <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>

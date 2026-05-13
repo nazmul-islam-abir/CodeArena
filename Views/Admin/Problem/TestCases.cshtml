@@ -1,0 +1,80 @@
+@model IEnumerable<MyMvcApp.Models.TestCase>
+@{
+    var problem = (MyMvcApp.Models.Problem)ViewBag.Problem;
+    ViewData["Title"] = $"Test Cases: {problem.Title}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Admin</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">Problems</a></li>
+            <li class="breadcrumb-item active">Test Cases</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 position-sticky" style="top:20px;">
+                <div class="card-header bg-dark text-white py-3 px-4 rounded-top-4"><h5 class="card-title mb-0 h6"><i class="bi bi-plus-circle me-2"></i>Add Test Case</h5></div>
+                <div class="card-body p-4">
+                    <form asp-action="AddTestCase" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ProblemId" value="@problem.Id" />
+                        <div class="mb-3"><label class="form-label small fw-bold">Input</label><textarea name="Input" class="form-control" rows="4" required placeholder="Raw input data..."></textarea></div>
+                        <div class="mb-3"><label class="form-label small fw-bold">Expected Output</label><textarea name="ExpectedOutput" class="form-control" rows="4" required placeholder="Expected output data..."></textarea></div>
+                        <div class="row mb-3">
+                            <div class="col-6"><label class="form-label small fw-bold">Order</label><input name="Order" type="number" class="form-control shadow-none" value="@((Model.Any() ? Model.Max(t => t.Order) : 0) + 1)" /></div>
+                            <div class="col-6"><label class="form-label small fw-bold">Points</label><input name="Points" type="number" class="form-control shadow-none" value="10" /></div>
+                        </div>
+                        <div class="mb-4"><div class="form-check form-switch p-3 bg-light rounded-3 border"><input class="form-check-input ms-0 me-3" type="checkbox" name="IsSample" id="IsSample" value="true"><label class="form-check-label small fw-bold" for="IsSample">Is Sample Test Case?</label></div><small class="text-muted d-block mt-2">Samples are shown to students in problem description. Hidden cases are used for final judging.</small></div>
+                        <button type="submit" class="btn btn-primary w-100 py-2 shadow-sm"><i class="bi bi-plus-lg me-2"></i>Add Test Case</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 h6 fw-bold">Existing Test Cases for: @problem.Title</h5>
+                    <span class="badge bg-primary rounded-pill">@Model.Count() cases</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light"><tr><th class="ps-4" style="width:80px;">Order</th><th>Type</th><th>Input Preview</th><th>Output Preview</th><th class="text-end pe-4">Actions</th></tr></thead>
+                        <tbody>
+                            @foreach (var tc in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold text-muted">#@tc.Order</td>
+                                    <td>@if (tc.IsSample) {
+                                        <span class="badge bg-success shadow-none">Sample</span>
+                                    } else
+                                    {
+
+                                        <span class="badge bg-dark shadow-none">Hidden</span>
+                                    }
+                                </td>
+                                <td><code class="small text-truncate d-inline-block" style="max-width:150px;">@(tc.Input?.Length > 20 ? tc.Input.Substring(0, 20) + "..." : tc.Input)</code></td>
+                                <td><code class="small text-truncate d-inline-block" style="max-width:150px;">@(tc.ExpectedOutput?.Length > 20 ? tc.ExpectedOutput.Substring(0, 20) + "..." : tc.ExpectedOutput)</code></td>
+                                <td class="text-end pe-4"><form asp-action="DeleteTestCase" asp-route-id="@tc.Id" method="post" onsubmit="return confirm('Are you sure?');">@Html.AntiForgeryToken()<button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form></td>
+                            </tr>
+                        }
+                        @if (!Model.Any())
+                        {
+                            <tr><td colspan="5" class="text-center py-5 text-muted">No test cases yet. Add one using the form on the left!</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+            
+        <div class="mt-4 p-4 bg-light rounded-4 border border-info">
+            <h6 class="fw-bold"><i class="bi bi-info-circle-fill text-info me-2"></i>How Hidden Test Cases Work</h6>
+            <p class="small text-muted mb-0">When a user submits their solution, the system runs it against <strong>every</strong> test case listed here. The solution is only marked as <strong>Accepted (AC)</strong> if it passes 100% of these cases.</p>
+        </div>
+    </div>
+</div>
+</div>

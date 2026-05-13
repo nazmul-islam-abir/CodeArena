@@ -1,0 +1,134 @@
+@model MyMvcApp.Models.Problem
+
+@{
+    ViewData["Title"] = "Edit Problem";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-action="Index">Admin</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">Problems</a></li>
+                    <li class="breadcrumb-item active">Edit</li>
+                </ol>
+            </nav>
+
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0 h5"><i class="bi bi-pencil-square me-2"></i>Edit Problem: @Model.Title</h3>
+                    <a asp-action="TestCases" asp-route-problemId="@Model.Id" class="btn btn-sm btn-light text-primary">
+                        <i class="bi bi-list-check me-1"></i> Manage Test Cases
+                    </a>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form asp-action="Edit" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="CreatedAt" />
+                        <input type="hidden" asp-for="Source" />
+                        <input type="hidden" asp-for="SourceId" />
+
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+
+                        <div class="row g-4">
+                            <!-- Basic Info -->
+                            <div class="col-md-8">
+                                <div class="form-floating mb-3">
+                                    <input asp-for="Title" class="form-control" placeholder="Problem Title" required />
+                                    <label asp-for="Title"></label>
+                                    <span asp-validation-for="Title" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="Description" class="form-label fw-bold small"></label>
+                                    <textarea asp-for="Description" class="form-control" rows="10" placeholder="Describe the problem..."></textarea>
+                                    <span asp-validation-for="Description" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <!-- Sidebar settings -->
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded-4 border">
+                                    <h5 class="h6 mb-3 fw-bold"><i class="bi bi-gear me-2"></i>Settings</h5>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" asp-for="IsActive">
+                                            <label class="form-check-label small fw-bold" asp-for="IsActive">Problem Active</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label asp-for="Difficulty" class="form-label small fw-bold"></label>
+                                        <select asp-for="Difficulty" class="form-select shadow-none">
+                                            <option value="1">Easy</option>
+                                            <option value="2">Medium</option>
+                                            <option value="3">Hard</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label asp-for="Category" class="form-label small fw-bold"></label>
+                                        <input asp-for="Category" class="form-control shadow-none" placeholder="e.g. Strings" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label asp-for="Points" class="form-label small fw-bold"></label>
+                                        <input asp-for="Points" class="form-control shadow-none" type="number" />
+                                    </div>
+
+                                    <hr />
+
+                                    <div class="mb-3">
+                                        <label asp-for="TimeLimit" class="form-label small fw-bold">Time Limit (Seconds)</label>
+                                        <input asp-for="TimeLimit" class="form-control shadow-none" type="number" step="1" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label asp-for="MemoryLimit" class="form-label small fw-bold">Memory Limit (KB)</label>
+                                        <input asp-for="MemoryLimit" class="form-control shadow-none" type="number" step="1" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Details Sections -->
+                            <div class="col-md-12">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label asp-for="InputFormat" class="form-label fw-bold small"></label>
+                                        <textarea asp-for="InputFormat" class="form-control" rows="3"></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="OutputFormat" class="form-label fw-bold small"></label>
+                                        <textarea asp-for="OutputFormat" class="form-control" rows="3"></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="SampleInput" class="form-label fw-bold small"></label>
+                                        <textarea asp-for="SampleInput" class="form-control" rows="5"></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="SampleOutput" class="form-label fw-bold small"></label>
+                                        <textarea asp-for="SampleOutput" class="form-control" rows="5"></textarea>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label asp-for="Constraints" class="form-label fw-bold small"></label>
+                                        <textarea asp-for="Constraints" class="form-control" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-5 py-2 shadow-sm">
+                                <i class="bi bi-save me-2"></i>Update Problem
+                            </button>
+                            <a asp-action="Index" class="btn btn-light px-4 py-2 border">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

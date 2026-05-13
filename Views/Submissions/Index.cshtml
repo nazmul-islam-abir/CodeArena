@@ -1,0 +1,167 @@
+@model IEnumerable<MyMvcApp.Models.Submission>
+@{
+    ViewData["Title"] = "Submissions";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var singleSubmission = ViewBag.SingleSubmission as MyMvcApp.Models.Submission;
+    bool isDetailsView = singleSubmission != null;
+}
+
+@if (isDetailsView)
+{
+    <div class="container py-4">
+        <a href="/Submissions" class="btn btn-outline-theme mb-4"><i class="bi bi-arrow-left me-2"></i>Back to Submissions</a>
+
+        @if (ViewBag.IsPending == true)
+        {
+            <div class="alert alert-info mb-4 text-center">
+                <div class="d-flex flex-column align-items-center">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width:3rem;height:3rem;"><span class="visually-hidden">Loading...</span></div>
+                    <h5 class="mb-2">Your submission is being judged...</h5>
+                    <p class="mb-0">This page will automatically refresh when the verdict is ready.</p>
+                    <div class="mt-3"><div class="progress" style="width:200px;height:4px;"><div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:100%"></div></div></div>
+                </div>
+            </div>
+            <meta http-equiv="refresh" content="3">
+        }
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header"><h5 class="fw-bold mb-0">Submission #@singleSubmission.Id</h5></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr><td class="text-secondary">Problem:</td><td><a href="/Problem/@singleSubmission.ProblemId" class="fw-bold" style="color:var(--primary);">@singleSubmission.ProblemTitle</a></td></tr>
+                                    <tr><td class="text-secondary">User:</td><td><i class="bi bi-person-circle me-1"></i>@singleSubmission.UserName</td></tr>
+                                    <tr><td class="text-secondary">Language:</td><td>@singleSubmission.LanguageName</td></tr>
+                                    <tr><td class="text-secondary">Submitted:</td><td>@singleSubmission.SubmittedAt.ToString("yyyy-MM-dd HH:mm:ss")</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr><td class="text-secondary">Verdict:</td><td>@if (singleSubmission.Verdict == "AC") {
+                                        <span class="badge bg-success fs-6">Accepted</span>
+                                    } else if (singleSubmission.Verdict == "WA")
+                                    {
+
+                                        <span class="badge bg-danger fs-6">Wrong Answer</span>
+                                    }
+                                    else if (singleSubmission.Verdict == "TLE")
+                                    {
+
+                                        <span class="badge bg-warning fs-6">Time Limit Exceeded</span>
+                                    }
+                                    else
+                                    {
+
+                                        <span class="badge bg-secondary fs-6">@singleSubmission.Verdict</span>
+                                    }
+                                </td></tr>
+                                @if (singleSubmission.ExecutionTime.HasValue)
+                                {
+                                    <tr><td class="text-secondary">Execution Time:</td><td>@(singleSubmission.ExecutionTime.Value.ToString("F3")) s</td></tr>
+                                }
+                                @if (singleSubmission.MemoryUsed.HasValue)
+                                {
+                                    <tr><td class="text-secondary">Memory Used:</td><td>@((singleSubmission.MemoryUsed.Value / 1024.0).ToString("F1")) MB</td></tr>
+                                }
+                                @if (singleSubmission.TestCasesPassed.HasValue && singleSubmission.TotalTestCases.HasValue)
+                                {
+                                    <tr><td class="text-secondary">Test Cases:</td><td>@singleSubmission.TestCasesPassed / @singleSubmission.TotalTestCases passed</td></tr>
+                                }
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card"><div class="card-header"><h5 class="fw-bold mb-0"><i class="bi bi-file-code me-2 text-primary"></i>Source Code</h5></div><div class="card-body p-0"><pre class="mb-0 p-3" style="background-color:var(--code-bg);color:var(--code-text);overflow-x:auto;"><code>@singleSubmission.SourceCode</code></pre></div></div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card"><div class="card-header"><h5 class="fw-bold mb-0">Actions</h5></div><div class="card-body"><a href="/Compiler?problemId=@singleSubmission.ProblemId" class="btn btn-primary w-100 mb-2"><i class="bi bi-arrow-repeat me-2"></i>Resubmit Solution</a><a href="/Problem/@singleSubmission.ProblemId" class="btn btn-outline-primary w-100 mb-2"><i class="bi bi-eye me-2"></i>View Problem</a><button class="btn btn-outline-secondary w-100" onclick="copyCode()"><i class="bi bi-clipboard me-2"></i>Copy Code</button></div></div>
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="card mt-3">
+                    <div class="card-header bg-danger text-white"><h5 class="fw-bold mb-0"><i class="bi bi-shield-lock me-2"></i>Admin Actions</h5></div><div class="card-body">
+                    <form method="post" action="/Submissions/Rejudge" onsubmit="return confirm('Re-judge this submission?');">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@singleSubmission.Id" /><button type="submit" class="btn btn-warning w-100 mb-2"><i class="bi bi-arrow-repeat me-2"></i>Re-judge Submission</button></form>
+                    <form method="post" action="/Submissions/Delete" onsubmit="return confirm('Delete this submission?');">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@singleSubmission.Id" /><button type="submit" class="btn btn-danger w-100"><i class="bi bi-trash me-2"></i>Delete Submission</button></form>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+</div>
+}
+else
+{
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div><h2 class="fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>All Submissions</h2><p class="text-secondary">View all code submissions from users</p></div>
+            <div><a href="/Problem" class="btn btn-outline-primary"><i class="bi bi-list-task me-2"></i>Problems</a></div>
+        </div>
+
+        @if (User.IsInRole("Admin"))
+        {
+            <div class="card mb-4"><div class="card-body"><div class="d-flex justify-content-between align-items-center flex-wrap gap-3"><div><h5 class="mb-0">Admin Actions</h5>@if (ViewBag.PendingCount > 0) {
+                <span class="badge bg-warning mt-1">@ViewBag.PendingCount pending submissions</span>
+            }
+        </div><div class="d-flex gap-2"><a href="/Submissions?showPending=true" class="btn btn-outline-warning"><i class="bi bi-hourglass-split me-1"></i> Show Pending</a><form method="post" action="/Submissions/ClearAllPending" onsubmit="return confirm('Delete ALL pending submissions?');">@Html.AntiForgeryToken()<button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i> Clear All Pending</button></form></div></div></div></div>
+    }
+
+    <div class="card mb-4"><div class="card-body"><form method="get" class="row g-3"><div class="col-md-3"><label class="form-label">Problem ID</label><input type="number" name="problemId" class="form-control" value="@Context.Request.Query["problemId"]"></div><div class="col-md-3"><label class="form-label">User ID</label><input type="number" name="userId" class="form-control" value="@Context.Request.Query["userId"]"></div><div class="col-md-3"><label class="form-label">Contest ID</label><input type="number" name="contestId" class="form-control" value="@Context.Request.Query["contestId"]"></div><div class="col-md-3 d-flex align-items-end gap-2"><button type="submit" class="btn btn-primary"><i class="bi bi-filter"></i> Filter</button><a href="/Submissions" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i> Reset</a></div></form></div></div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead><tr><th>ID</th><th>User</th><th>Problem</th><th>Language</th><th>Verdict</th><th>Time</th><th>Memory</th><th>When</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var submission in Model)
+                            {
+                                <tr>
+                                    <td>#@submission.Id</td>
+                                    <td><a href="/Auth/Profile?userId=@submission.UserId" class="text-decoration-none"><i class="bi bi-person-circle me-1"></i>@submission.UserName</a></td>
+                                    <td><a href="/Problem/@submission.ProblemId" class="text-decoration-none">@submission.ProblemTitle</a></td>
+                                    <td>@submission.LanguageName</td>
+                                    <td>@if (submission.Verdict == "AC") {
+                                        <span class="badge bg-success">Accepted</span>
+                                    } else if (submission.Verdict == "WA")
+                                    {
+
+                                        <span class="badge bg-danger">Wrong Answer</span>
+                                    }
+                                    else
+                                    {
+
+                                        <span class="badge bg-secondary">@submission.Verdict</span>
+                                    }
+                                </td>
+                                <td>@(submission.ExecutionTime.HasValue ? submission.ExecutionTime.Value.ToString("F3") + " s" : "-")</td>
+                                <td>@(submission.MemoryUsed.HasValue ? ((submission.MemoryUsed.Value / 1024.0).ToString("F1") + " MB") : "-")</td>
+                                <td><small class="text-secondary">@submission.SubmittedAt.ToString("MMM dd, HH:mm")</small></td>
+                                <td><a href="/Submissions/@submission.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+            else
+        {
+            <div class="text-center py-5"><i class="bi bi-inbox fs-1 text-secondary"></i><p class="text-secondary mt-3">No submissions found.</p><a href="/Compiler" class="btn btn-primary mt-2"><i class="bi bi-code-slash me-2"></i>Try the Compiler</a></div>
+        }
+    </div>
+</div>
+</div>
+}
+
+<script>
+    function copyCode() {
+        const code = document.querySelector('pre code')?.innerText;
+        if (code) navigator.clipboard.writeText(code).then(() => alert('Code copied!'));
+    }
+</script>

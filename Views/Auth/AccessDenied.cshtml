@@ -1,0 +1,25 @@
+@{
+    ViewData["Title"] = "Access Denied";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5 text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card p-5">
+                <i class="bi bi-shield-lock-fill text-danger" style="font-size: 5rem;"></i>
+                <h2 class="fw-bold mt-4">Access Denied</h2>
+                <p class="text-secondary">You don't have permission to access this page.</p>
+                <a href="/" class="btn btn-primary mt-3">Go to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: 16px;
+    }
+</style>

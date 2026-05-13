@@ -1,24 +1,27 @@
 using Microsoft.AspNetCore.Mvc;
 using MyMvcApp.Models;
-using Npgsql;
+using MyMvcApp.Data;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 
 namespace MyMvcApp.Controllers
 {
     public class AuthController : Controller
     {
-        private readonly string _connectionString;
+        private readonly AppDbContext _context;
 
-        public AuthController(IConfiguration configuration)
+        public AuthController(AppDbContext context)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _context = context;
         }
 
         [HttpGet]
         public IActionResult Login()
         {
-            // Check if user is already logged in
             if (HttpContext.Session.GetString("UserId") != null)
             {
                 return RedirectToAction("Index", "Home");
@@ -27,7 +30,7 @@ namespace MyMvcApp.Controllers
         }
 
         [HttpPost]
-        public IActionResult Login(LoginViewModel model)
+        public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -36,50 +39,46 @@ namespace MyMvcApp.Controllers
 
             try
             {
-                using var conn = new NpgsqlConnection(_connectionString);
-                conn.Open();
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => (u.Username == model.Username || u.Email == model.Username) && u.IsActive);
 
-                var query = @"
-                    SELECT id, first_name, last_name, username, email, student_id, 
-                           password_hash, is_active, role
-                    FROM users 
-                    WHERE (username = @username OR email = @email) AND is_active = true";
-
-                using var cmd = new NpgsqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@username", model.Username);
-                cmd.Parameters.AddWithValue("@email", model.Username);
-
-                using var reader = cmd.ExecuteReader();
-                if (reader.Read())
+                if (user != null && VerifyPassword(model.Password, user.PasswordHash))
                 {
-                    var passwordHash = reader.GetString(6);
-                    if (VerifyPassword(model.Password, passwordHash))
+                    // Update last login
+                    user.LastLoginAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+
+                    // Set session variables
+                    HttpContext.Session.SetString("UserId", user.Id.ToString());
+                    HttpContext.Session.SetString("Username", user.Username);
+                    HttpContext.Session.SetString("UserRole", user.Role);
+                    HttpContext.Session.SetString("UserFullName", user.FullName);
+
+                    // Create authentication cookie
+                    var claims = new List<Claim>
                     {
-                        var userId = reader.GetInt32(0);
-                        var firstName = reader.GetString(1);
-                        var lastName = reader.GetString(2);
-                        var username = reader.GetString(3);
-                        var role = reader.GetString(8);
+                        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                        new Claim(ClaimTypes.Name, user.Username),
+                        new Claim(ClaimTypes.Role, user.Role),
+                        new Claim("FullName", user.FullName)
+                    };
 
-                        // Close reader before executing another command
-                        reader.Close();
+                    var claimsIdentity = new ClaimsIdentity(
+                        claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
-                        // Update last login
-                        var updateQuery = "UPDATE users SET last_login_at = @lastLogin WHERE id = @id";
-                        using var updateCmd = new NpgsqlCommand(updateQuery, conn);
-                        updateCmd.Parameters.AddWithValue("@lastLogin", DateTime.Now);
-                        updateCmd.Parameters.AddWithValue("@id", userId);
-                        updateCmd.ExecuteNonQuery();
+                    var authProperties = new AuthenticationProperties
+                    {
+                        IsPersistent = model.RememberMe,
+                        ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+                    };
 
-                        // Set session variables
-                        HttpContext.Session.SetString("UserId", userId.ToString());
-                        HttpContext.Session.SetString("Username", username);
-                        HttpContext.Session.SetString("UserRole", role);
-                        HttpContext.Session.SetString("UserFullName", firstName + " " + lastName);
+                    await HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        new ClaimsPrincipal(claimsIdentity),
+                        authProperties);
 
-                        TempData["SuccessMessage"] = "Login successful!";
-                        return RedirectToAction("Index", "Home");
-                    }
+                    TempData["SuccessMessage"] = "Login successful!";
+                    return RedirectToAction("Index", "Home");
                 }
 
                 ModelState.AddModelError("", "Invalid username or password");
@@ -103,7 +102,7 @@ namespace MyMvcApp.Controllers
         }
 
         [HttpPost]
-        public IActionResult Signup(SignupViewModel model)
+        public async Task<IActionResult> Signup(SignupViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -112,55 +111,65 @@ namespace MyMvcApp.Controllers
 
             try
             {
-                using var conn = new NpgsqlConnection(_connectionString);
-                conn.Open();
-
-                // Check if username exists
-                var checkQuery = "SELECT COUNT(*) FROM users WHERE username = @username";
-                using var checkCmd = new NpgsqlCommand(checkQuery, conn);
-                checkCmd.Parameters.AddWithValue("@username", model.Username);
-                var count = (long)checkCmd.ExecuteScalar();
-                if (count > 0)
+                // Check if username or email exists separately to provide precise feedback
+                bool usernameExists = await _context.Users.AnyAsync(u => u.Username == model.Username);
+                bool emailExists = await _context.Users.AnyAsync(u => u.Email == model.Email);
+                if (usernameExists || emailExists)
                 {
-                    ModelState.AddModelError("Username", "Username already exists");
+                    if (usernameExists)
+                        ModelState.AddModelError("Username", "Username already exists");
+                    if (emailExists)
+                        ModelState.AddModelError("Email", "Email already registered");
+
                     return View(model);
                 }
 
-                // Check if email exists
-                checkCmd.CommandText = "SELECT COUNT(*) FROM users WHERE email = @email";
-                checkCmd.Parameters.Clear();
-                checkCmd.Parameters.AddWithValue("@email", model.Email);
-                count = (long)checkCmd.ExecuteScalar();
-                if (count > 0)
+                // Create new user
+                var user = new User
                 {
-                    ModelState.AddModelError("Email", "Email already registered");
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    Username = model.Username,
+                    Email = model.Email,
+                    StudentId = model.StudentId,
+                    PasswordHash = HashPassword(model.Password),
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true,
+                    Role = "User",
+                    ProblemsSolved = 0,
+                    ContestsParticipated = 0,
+                    TotalPoints = 0
+                };
+
+                _context.Users.Add(user);
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException dbEx)
+                {
+                    // Extract inner exception message for diagnosis
+                    var inner = dbEx.InnerException?.Message ?? dbEx.Message;
+                    Console.WriteLine("DbUpdateException during signup: " + inner);
+
+                    // Provide friendly message for common unique constraint violations
+                    if (inner.Contains("duplicate", StringComparison.OrdinalIgnoreCase) || inner.Contains("unique", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ModelState.AddModelError("", "A user with the same username or email already exists.");
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", "Database error: " + inner);
+                    }
+
                     return View(model);
                 }
-
-                // Insert new user
-                var insertQuery = @"
-                    INSERT INTO users (first_name, last_name, username, email, student_id, password_hash, created_at, is_active, role)
-                    VALUES (@firstName, @lastName, @username, @email, @studentId, @passwordHash, @createdAt, @isActive, @role)
-                    RETURNING id";
-
-                using var insertCmd = new NpgsqlCommand(insertQuery, conn);
-                insertCmd.Parameters.AddWithValue("@firstName", model.FirstName);
-                insertCmd.Parameters.AddWithValue("@lastName", model.LastName);
-                insertCmd.Parameters.AddWithValue("@username", model.Username);
-                insertCmd.Parameters.AddWithValue("@email", model.Email);
-                insertCmd.Parameters.AddWithValue("@studentId", string.IsNullOrEmpty(model.StudentId) ? DBNull.Value : (object)model.StudentId);
-                insertCmd.Parameters.AddWithValue("@passwordHash", HashPassword(model.Password));
-                insertCmd.Parameters.AddWithValue("@createdAt", DateTime.Now);
-                insertCmd.Parameters.AddWithValue("@isActive", true);
-                insertCmd.Parameters.AddWithValue("@role", "User");
-
-                var userId = (int)insertCmd.ExecuteScalar();
 
                 // Set session
-                HttpContext.Session.SetString("UserId", userId.ToString());
-                HttpContext.Session.SetString("Username", model.Username);
+                HttpContext.Session.SetString("UserId", user.Id.ToString());
+                HttpContext.Session.SetString("Username", user.Username);
                 HttpContext.Session.SetString("UserRole", "User");
-                HttpContext.Session.SetString("UserFullName", model.FirstName + " " + model.LastName);
+                HttpContext.Session.SetString("UserFullName", user.FullName);
 
                 TempData["SuccessMessage"] = "Account created successfully!";
                 return RedirectToAction("Index", "Home");
@@ -173,11 +182,10 @@ namespace MyMvcApp.Controllers
         }
 
         [HttpGet]
-        public IActionResult Profile()
+        public async Task<IActionResult> Profile()
         {
-            // Check if user is logged in
-            var userId = HttpContext.Session.GetString("UserId");
-            if (string.IsNullOrEmpty(userId))
+            var userIdStr = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(userIdStr))
             {
                 TempData["ErrorMessage"] = "Please login to view your profile.";
                 return RedirectToAction("Login");
@@ -185,43 +193,80 @@ namespace MyMvcApp.Controllers
 
             try
             {
-                using var conn = new NpgsqlConnection(_connectionString);
-                conn.Open();
+                int userId = int.Parse(userIdStr);
+                var user = await _context.Users.FindAsync(userId);
 
-                var query = @"
-                    SELECT id, first_name, last_name, username, email, student_id, 
-                           created_at, last_login_at, role
-                    FROM users 
-                    WHERE id = @id";
-
-                using var cmd = new NpgsqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@id", int.Parse(userId));
-
-                using var reader = cmd.ExecuteReader();
-                if (reader.Read())
+                if (user == null)
                 {
-                    var profile = new ProfileViewModel
-                    {
-                        Id = reader.GetInt32(0),
-                        FirstName = reader.GetString(1),
-                        LastName = reader.GetString(2),
-                        Username = reader.GetString(3),
-                        Email = reader.GetString(4),
-                        StudentId = reader.IsDBNull(5) ? null : reader.GetString(5),
-                        CreatedAt = reader.GetDateTime(6),
-                        LastLoginAt = reader.IsDBNull(7) ? null : reader.GetDateTime(7),
-                        Role = reader.GetString(8),
-                        
-                        // For demo purposes - in real app, calculate from database
-                        ProblemsSolved = 12,
-                        ContestsParticipated = 5,
-                        TotalPoints = 450
-                    };
-
-                    return View(profile);
+                    return NotFound();
                 }
 
-                return NotFound();
+                var profile = new ProfileViewModel
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Username = user.Username,
+                    Email = user.Email,
+                    StudentId = user.StudentId,
+                    CreatedAt = user.CreatedAt,
+                    LastLoginAt = user.LastLoginAt,
+                    Role = user.Role,
+                    ProblemsSolved = user.ProblemsSolved,
+                    ContestsParticipated = user.ContestsParticipated,
+                    TotalPoints = user.TotalPoints
+                };
+
+                // Get recent submissions
+                var submissions = await _context.Submissions
+                    .Where(s => s.UserId == userId)
+                    .OrderByDescending(s => s.SubmittedAt)
+                    .Take(10)
+                    .Select(s => new SubmissionViewModel
+                    {
+                        ProblemId = s.ProblemId,
+                        ProblemTitle = s.ProblemTitle,
+                        Verdict = s.Verdict,
+                        ExecutionTime = s.ExecutionTime,
+                        MemoryUsed = s.MemoryUsed,
+                        SubmittedAt = s.SubmittedAt,
+                        LanguageName = s.LanguageName
+                    })
+                    .ToListAsync();
+
+                ViewBag.RecentSubmissions = submissions;
+
+                // Get statistics by difficulty
+                var stats = await _context.Submissions
+                    .Where(s => s.UserId == userId && s.Verdict == "AC")
+                    .Join(_context.Problems, s => s.ProblemId, p => p.Id, (s, p) => new { p.Difficulty, p.Id })
+                    .Distinct()
+                    .GroupBy(x => x.Difficulty)
+                    .Select(g => new { Difficulty = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                ViewBag.EasySolved = stats.FirstOrDefault(s => s.Difficulty == 1)?.Count ?? 0;
+                ViewBag.MediumSolved = stats.FirstOrDefault(s => s.Difficulty == 2)?.Count ?? 0;
+                ViewBag.HardSolved = stats.FirstOrDefault(s => s.Difficulty == 3)?.Count ?? 0;
+
+                // Get solved problems
+                var solvedProblems = await _context.Submissions
+                    .Where(s => s.UserId == userId && s.Verdict == "AC")
+                    .Join(_context.Problems, s => s.ProblemId, p => p.Id, (s, p) => new { s.SubmittedAt, p.Id, p.Title, p.Difficulty, p.Points })
+                    .OrderByDescending(x => x.SubmittedAt)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.Title,
+                        x.Difficulty,
+                        x.Points,
+                        SolvedAt = x.SubmittedAt.ToString("MMM dd, yyyy")
+                    })
+                    .ToListAsync();
+
+                ViewBag.SolvedProblems = solvedProblems;
+
+                return View(profile);
             }
             catch (Exception ex)
             {
@@ -231,9 +276,10 @@ namespace MyMvcApp.Controllers
         }
 
         [HttpPost]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
             HttpContext.Session.Clear();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             TempData["SuccessMessage"] = "You have been logged out successfully.";
             return RedirectToAction("Index", "Home");
         }

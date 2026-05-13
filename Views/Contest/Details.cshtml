@@ -1,337 +1,241 @@
 @model MyMvcApp.Models.Contest
 @{
-    ViewData["Title"] = "Details Page";
+    ViewData["Title"] = @Model.Title;
     Layout = "~/Views/Shared/_Layout.cshtml";
-
-    
     var problems = ViewBag.Problems as List<MyMvcApp.Models.ContestProblem>;
-    var leaderboard = ViewBag.Leaderboard as List<MyMvcApp.Models.ContestLeaderboardEntry>;
+    var isActive = Model.Status == "Active";
+    var isUpcoming = Model.Status == "Upcoming";
+    var isEnded = Model.Status == "Ended";
 }
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeArena · @Model.Title</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-body: #f8fafc;
-            --bg-card: #ffffff;
-            --text-primary: #0f172a;
-            --text-secondary: #334155;
-            --border-light: #e2e8f0;
-            --navbar-bg: #ffffffcc;
-            --footer-bg: #eef2f6;
-            --primary: #0284c7;
-            --primary-light: #e0f2fe;
-            --success: #10b981;
-        }
-        body.dark {
-            --bg-body: #0b1120;
-            --bg-card: #1e293b;
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
-            --border-light: #334155;
-            --navbar-bg: #1e293be6;
-            --footer-bg: #0f172a;
-            --primary: #38bdf8;
-            --primary-light: #1e3a5f;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-primary);
-            transition: all 0.2s ease;
-        }
-        .navbar {
-            background-color: var(--navbar-bg) !important;
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border-light);
-        }
-        .navbar-brand, .nav-link {
-            color: var(--text-primary) !important;
-        }
-        .theme-toggle {
-            background: transparent;
-            border: 1px solid var(--border-light);
-            color: var(--text-primary);
-            padding: 0.4rem 1rem;
-            border-radius: 60px;
-            cursor: pointer;
-        }
-        .card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-light);
-            border-radius: 16px;
-        }
-        .countdown-large {
-            font-size: 2.5rem;
-            font-weight: 700;
-            font-family: monospace;
-            color: var(--primary);
-        }
-        .problem-item {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-light);
-            transition: background-color 0.2s;
-        }
-        .problem-item:hover {
-            background-color: var(--primary-light);
-        }
-        .footer {
-            background-color: var(--footer-bg);
-            border-top: 1px solid var(--border-light);
-        }
-        .share-link {
-            background: var(--bg-body);
-            padding: 0.75rem;
-            border-radius: 8px;
-            border: 1px dashed var(--border-light);
-            font-family: monospace;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container py-4">
-        <!-- Back Button -->
-        <a href="/Contest" class="btn btn-outline-theme mb-4">
-            <i class="bi bi-arrow-left me-2"></i>Back to Contests
-        </a>
-
-        <!-- Contest Header -->
-        <div class="card p-4 mb-4">
-            <div class="row">
-                <div class="col-md-8">
-                    <h2 class="fw-bold">@Model.Title</h2>
-                    <p class="text-secondary">@Model.Description</p>
-                    
-                    <div class="row mt-4">
-                        <div class="col-md-4">
-                            <small class="text-secondary">Organizer</small>
-                            <div><i class="bi bi-person-circle me-2"></i>@Model.Organizer</div>
-                        </div>
-                        <div class="col-md-4">
-                            <small class="text-secondary">Start Time</small>
-                            <div><i class="bi bi-calendar-event me-2"></i>@Model.StartTime.ToString("MMM dd, yyyy HH:mm")</div>
-                        </div>
-                        <div class="col-md-4">
-                            <small class="text-secondary">Duration</small>
-                            <div><i class="bi bi-clock me-2"></i>@Model.Duration</div>
-                        </div>
+<div class="container py-4">
+    <!-- Contest Header -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1 class="fw-bold mb-2">@Model.Title</h1>
+                    <p class="text-secondary mb-3">@Model.Description</p>
+                    <div class="d-flex flex-wrap gap-3 mb-3">
+                        <span class="badge-custom"><i class="bi bi-person-circle me-1"></i> @Model.Organizer</span>
+                        <span class="badge-custom"><i class="bi bi-calendar-event me-1"></i> @Model.StartTime.ToString("MMM dd, yyyy HH:mm")</span>
+                        <span class="badge-custom"><i class="bi bi-hourglass-split me-1"></i> @Model.Duration</span>
+                        <span class="badge-custom"><i class="bi bi-people-fill me-1"></i> @Model.ParticipantCount participants</span>
                     </div>
                 </div>
-                <div class="col-md-4 text-end">
-                    @if (Model.Status == "Active")
+                <div class="text-end">
+                    @if (isActive)
                     {
-                        <div>
+                        <div class="countdown-timer" data-end="@Model.EndTime.ToString("yyyy-MM-ddTHH:mm:ss")">
+                            <div class="display-6 fw-bold text-primary">--:--:--</div>
                             <small class="text-secondary">Time Remaining</small>
-                            <div class="countdown-large" data-end="@Model.EndTime.ToString("yyyy-MM-ddTHH:mm:ss")">
-                                Calculating...
-                            </div>
                         </div>
                     }
-                    else if (Model.Status == "Upcoming")
+                    else if (isUpcoming)
                     {
-                        <div class="mt-3">
-                            <span class="badge bg-info p-3">Starts in @((Model.StartTime - DateTime.Now).Days) days</span>
+                        <div class="countdown-timer" data-end="@Model.StartTime.ToString("yyyy-MM-ddTHH:mm:ss")">
+                            <div class="display-6 fw-bold text-warning">--:--:--</div>
+                            <small class="text-secondary">Starts in</small>
                         </div>
                     }
                     else
                     {
-                        <div class="mt-3">
-                            <span class="badge bg-secondary p-3">Contest Ended</span>
-                        </div>
+                        <span class="badge bg-secondary fs-5">Contest Finished</span>
                     }
-                </div>
-            </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="d-flex gap-3 mb-4">
-            @if (Model.IsRegistered)
-            {
-                <form method="post" action="/Contest/Unregister">
-                    <input type="hidden" name="contestId" value="@Model.Id" />
-                    <button type="submit" class="btn btn-outline-danger btn-lg">
-                        <i class="bi bi-x-circle me-2"></i>Unregister
-                    </button>
-                </form>
-            }
-            else if (Model.Status != "Ended")
-            {
-                <form method="post" action="/Contest/Register">
-                    <input type="hidden" name="contestId" value="@Model.Id" />
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="bi bi-check-circle me-2"></i>Register Now
-                    </button>
-                </form>
-            }
-            
-            @if (Model.Status == "Active" && Model.IsRegistered)
-            {
-                <a href="/Compiler" class="btn btn-success btn-lg">
-                    <i class="bi bi-play-circle me-2"></i>Enter Contest
-                </a>
-            }
-            
-            <button class="btn btn-outline-theme btn-lg" onclick="copyContestLink()">
-                <i class="bi bi-share me-2"></i>Share Link
-            </button>
-        </div>
-
-        <!-- Share Link -->
-        <div class="share-link mb-4" id="contestLink">
-            https://codearena.dev/contest/join/@Model.ContestLink
-        </div>
-
-        <!-- Problems and Leaderboard -->
-        <div class="row">
-            <div class="col-md-7">
-                <div class="card p-4">
-                    <h4 class="fw-bold mb-3"><i class="bi bi-list-task me-2 text-primary"></i>Problems</h4>
-                    @if (problems != null)
-                    {
-                        @foreach (var problem in problems)
-                        {
-                            <div class="problem-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1">@problem.Title</h6>
-                                    <div>
-                                        <span class="badge bg-secondary me-2">@problem.Difficulty</span>
-                                        <small class="text-secondary">@problem.Points pts</small>
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <div><small class="text-success">@problem.SolvedCount solved</small></div>
-                                    @if (Model.Status == "Active" && Model.IsRegistered)
-                                    {
-                                        <a href="/Compiler" class="btn btn-sm btn-outline-primary mt-2">Solve</a>
-                                    }
-                                </div>
-                            </div>
-                        }
-                    }
-                </div>
-            </div>
-
-            <div class="col-md-5">
-                <div class="card p-4">
-                    <h4 class="fw-bold mb-3"><i class="bi bi-trophy-fill me-2 text-warning"></i>Leaderboard</h4>
-                    @if (leaderboard != null)
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Rank</th>
-                                        <th>User</th>
-                                        <th>Solved</th>
-                                        <th>Points</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var entry in leaderboard)
-                                    {
-                                        <tr>
-                                            <td>
-                                                @if (entry.Rank == 1)
-                                                {
-                                                    <span class="text-warning">🥇</span>
-                                                }
-                                                else if (entry.Rank == 2)
-                                                {
-                                                    <span class="text-secondary">🥈</span>
-                                                }
-                                                else if (entry.Rank == 3)
-                                                {
-                                                    <span class="text-bronze">🥉</span>
-                                                }
-                                                else
-                                                {
-                                                    @entry.Rank
-                                                }
-                                            </td>
-                                            <td>@entry.UserName</td>
-                                            <td>@entry.SolvedCount</td>
-                                            <td><strong>@entry.TotalPoints</strong></td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <!-- Stats -->
-        <div class="row mt-4">
-            <div class="col-md-3">
-                <div class="card p-3 text-center">
-                    <h3 class="fw-bold text-primary">@Model.ParticipantCount</h3>
-                    <small class="text-secondary">Participants</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card p-3 text-center">
-                    <h3 class="fw-bold text-primary">@Model.ProblemCount</h3>
-                    <small class="text-secondary">Problems</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card p-3 text-center">
-                    <h3 class="fw-bold text-primary">@(leaderboard?.Max(l => l.TotalPoints) ?? 0)</h3>
-                    <small class="text-secondary">Highest Score</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card p-3 text-center">
-                    <h3 class="fw-bold text-primary">@Model.Duration</h3>
-                    <small class="text-secondary">Duration</small>
                 </div>
             </div>
         </div>
     </div>
 
-    
+    <!-- Action Buttons -->
+    <div class="d-flex gap-2 mb-4 flex-wrap">
+        @if (!Model.IsRegistered && !isEnded)
+        {
+            <form method="post" action="/Contest/Register">
+                <input type="hidden" name="contestId" value="@Model.Id" />
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-check-circle me-2"></i>Register for Contest
+                </button>
+            </form>
+        }
+        else if (Model.IsRegistered && !isEnded)
+        {
+            <form method="post" action="/Contest/Unregister">
+                <input type="hidden" name="contestId" value="@Model.Id" />
+                <button type="submit" class="btn btn-outline-danger btn-lg">
+                    <i class="bi bi-x-circle me-2"></i>Unregister
+                </button>
+            </form>
+        }
+
+        @if (Model.IsRegistered || isEnded)
+        {
+            <a href="/Contest/@Model.Id/Submissions" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-clock-history me-2"></i>My Submissions
+            </a>
+            
+            <a href="/Contest/@Model.Id/Ranking" class="btn btn-outline-warning btn-lg">
+                <i class="bi bi-trophy me-2"></i>Ranking
+            </a>
+        }
+
+        @if (User.IsInRole("Admin"))
+        {
+            <a href="/Contest/Edit/@Model.Id" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-pencil me-2"></i>Edit
+            </a>
+            <form method="post" action="/Contest/ToggleFreeze/@Model.Id" style="display: inline;">
+                <button type="submit" class="btn @(Model.IsFrozen ? "btn-warning" : "btn-outline-info") btn-lg">
+                    <i class="bi @(Model.IsFrozen ? "bi-snow" : "bi-thermometer-half") me-2"></i>
+                    @(Model.IsFrozen ? "Unfreeze" : "Freeze") Standings
+                </button>
+            </form>
+        }
+    </div>
+
+    <!-- Problems List -->
+    <div class="card">
+        <div class="card-header">
+            <h4 class="fw-bold mb-0"><i class="bi bi-list-task me-2 text-primary"></i>Problems</h4>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px">#</th>
+                            <th>Problem Name</th>
+                            <th style="width: 100px">Points</th>
+                            <th style="width: 150px">Action</th>
+                        </thead>
+                        <tbody>
+                            @if (problems != null)
+                            {
+                                var letter = 'A';
+                                foreach (var cp in problems)
+                                {
+                                    <tr>
+                                        <td class="fw-bold text-primary">@letter</td>
+                                        <td>
+                                            <a href="/Contest/@Model.Id/Problem/@letter" class="fw-medium" style="color: var(--text-primary); text-decoration: none;">
+                                                @cp.Problem?.Title
+                                            </a>
+                                        </td>
+                                        <td>@cp.Points pts</td>
+                                        <td>
+                                            @if (isActive && Model.IsRegistered)
+                                            {
+                                                <a href="/Contest/@Model.Id/Problem/@letter" class="btn btn-sm btn-primary">
+                                                    Solve <i class="bi bi-arrow-right ms-1"></i>
+                                                </a>
+                                            }
+                                            else if (isEnded)
+                                            {
+                                                <a href="/Contest/@Model.Id/Problem/@letter" class="btn btn-sm btn-outline-secondary">
+                                                    Practice <i class="bi bi-arrow-right ms-1"></i>
+                                                </a>
+                                            }
+                                            else if (!Model.IsRegistered && isActive)
+                                            {
+                                                <button class="btn btn-sm btn-secondary" disabled>
+                                                    Register to Solve
+                                                </button>
+                                            }
+                                            else if (isUpcoming)
+                                            {
+                                                <span class="text-secondary">Starts soon</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    letter++;
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Countdown
-        function updateCountdown() {
-            const timer = document.querySelector('.countdown-large');
-            if (timer) {
+        function updateCountdowns() {
+            document.querySelectorAll('.countdown-timer').forEach(timer => {
                 const endTime = new Date(timer.dataset.end).getTime();
                 const now = new Date().getTime();
                 const distance = endTime - now;
 
                 if (distance < 0) {
-                    timer.innerHTML = "Ended";
+                    const display = timer.querySelector('.display-6');
+                    if (display) {
+                        display.innerHTML = "00:00:00";
+                        display.classList.remove('text-primary', 'text-warning');
+                        display.classList.add('text-secondary');
+                    }
                 } else {
                     const hours = Math.floor(distance / (1000 * 60 * 60));
                     const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                     const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                    
-                    timer.innerHTML = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                    const display = timer.querySelector('.display-6');
+                    if (display) {
+                        display.innerHTML = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    }
                 }
-            }
+            });
         }
 
-        setInterval(updateCountdown, 1000);
-
-        // Copy contest link
-        window.copyContestLink = function() {
-            const link = document.getElementById('contestLink').innerText;
-            navigator.clipboard.writeText(link).then(() => {
-                alert('Contest link copied to clipboard!');
-            });
-        };
-
-        // Theme toggle
-       
+        updateCountdowns();
+        setInterval(updateCountdowns, 1000);
     </script>
-</body>
-</html>
+
+    <style>
+        .badge-custom {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background-color: var(--bg-body);
+            border: 1px solid var(--border-light);
+            border-radius: 30px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+        }
+
+        .card-header {
+            background-color: transparent;
+            border-bottom: 1px solid var(--border-light);
+            padding: 1.25rem 1.5rem;
+        }
+
+        .table {
+            color: var(--text-primary) !important;
+        }
+
+            .table thead th {
+                background-color: var(--table-header-bg, var(--bg-body));
+                color: var(--text-primary);
+                border-bottom-color: var(--border-light);
+                font-weight: 600;
+            }
+
+            .table tbody tr:hover {
+                background-color: var(--table-row-hover, var(--primary-light));
+            }
+
+            .table td, .table th {
+                border-color: var(--border-light);
+                color: var(--text-primary);
+                vertical-align: middle;
+            }
+
+        .countdown-timer .display-6 {
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-weight: 700;
+        }
+    </style>

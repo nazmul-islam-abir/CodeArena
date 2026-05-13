@@ -1,0 +1,79 @@
+﻿# Build outputs
+bin/
+obj/
+out/
+build/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio
+.vs/
+.vscode/
+.idea/
+
+# Debug and release folders
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# NuGet packages
+packages/
+*.nupkg
+
+# Entity Framework Migrations temporary files
+Migrations/ (but keep the migration .cs files if you want)
+
+# Logs
+logs/
+*.log
+
+# Database files
+*.db
+*.mdf
+*.ldf
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# App settings with secrets (important!)
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Local.json
+secrets.json
+
+# Compiled binaries
+*.dll
+*.exe
+*.pdb
+*.so
+*.dylib
+
+# Static web assets
+wwwroot/lib/
+wwwroot/dist/
+
+# Temp files
+*.tmp
+*.temp
+*.cache
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Rider
+.idea/
+*.sln.iml

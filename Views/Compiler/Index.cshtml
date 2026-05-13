@@ -282,17 +282,23 @@
                     </div>
                     
                     <form method="post" id="compilerForm">
+                        @* Keep problem/context info when submitting *@
+                        @if (ViewBag.ProblemId != null)
+                        {
+                            <input type="hidden" name="problemId" value="@ViewBag.ProblemId" />
+                        }
+                        @if (ViewBag.ContestId != null)
+                        {
+                            <input type="hidden" name="contestId" value="@ViewBag.ContestId" />
+                        }
                         @{
                             string defaultCode = @"#include <iostream>
 using namespace std;
 
 int main() {
-    // Your code here
-    cout << ""Hello, CodeArena!"" << endl;
-    
     int a, b;
     cin >> a >> b;
-    cout << ""Sum: "" << a + b << endl;
+    cout << a + b << endl;
     
     return 0;
 }";
@@ -344,7 +350,7 @@ int main() {
                                 <span class="text-secondary"><i class="bi bi-info-circle"></i> <span id="languageInfo">C++17</span></span>
                             </div>
                             <button type="submit" class="btn-run" id="runBtn">
-                                <span id="runText"><i class="bi bi-play-fill me-2"></i>Run Code</span>
+                                <span id="runText"><i class="bi bi-play-fill me-2"></i>Submit</span>
                                 <span id="runSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
                             </button>
                         </div>
