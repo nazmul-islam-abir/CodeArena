@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyMvcApp.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260512192026_RecreateSubmissions")]
-    partial class RecreateSubmissions
+    [Migration("20260515171822_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -87,9 +87,17 @@ namespace MyMvcApp.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_frozen");
 
+                    b.Property<bool>("IsPrivate")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_private");
+
                     b.Property<bool>("IsRegistered")
                         .HasColumnType("boolean")
                         .HasColumnName("is_registered");
+
+                    b.Property<int>("MaxParticipants")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_participants");
 
                     b.Property<string>("Organizer")
                         .IsRequired()
@@ -100,6 +108,11 @@ namespace MyMvcApp.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("participant_count");
 
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("password");
+
                     b.Property<int>("ProblemCount")
                         .HasColumnType("integer")
                         .HasColumnName("problem_count");
@@ -107,6 +120,15 @@ namespace MyMvcApp.Migrations
                     b.Property<bool>("RequiresApproval")
                         .HasColumnType("boolean")
                         .HasColumnName("requires_approval");
+
+                    b.Property<string>("Rules")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("rules");
+
+                    b.Property<bool>("ShowRankingImmediately")
+                        .HasColumnType("boolean")
+                        .HasColumnName("show_ranking_immediately");
 
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("timestamp without time zone")
@@ -119,7 +141,8 @@ namespace MyMvcApp.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("title");
 
                     b.HasKey("Id")
@@ -144,6 +167,11 @@ namespace MyMvcApp.Migrations
                     b.Property<string>("CustomTitle")
                         .HasColumnType("text")
                         .HasColumnName("custom_title");
+
+                    b.Property<string>("Letter")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("letter");
 
                     b.Property<int>("Order")
                         .HasColumnType("integer")
@@ -179,6 +207,14 @@ namespace MyMvcApp.Migrations
                         .HasColumnType("text")
                         .HasColumnName("user_name");
 
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<string>("PasswordEntered")
+                        .HasColumnType("text")
+                        .HasColumnName("password_entered");
+
                     b.Property<DateTime>("RegistrationTime")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("registration_time");
@@ -188,8 +224,15 @@ namespace MyMvcApp.Migrations
                         .HasColumnType("text")
                         .HasColumnName("status");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
                     b.HasKey("ContestId", "UserName")
                         .HasName("pk_contest_registrations");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_contest_registrations_user_id");
 
                     b.ToTable("contest_registrations", (string)null);
                 });
@@ -511,6 +554,27 @@ namespace MyMvcApp.Migrations
                     b.Navigation("Contest");
 
                     b.Navigation("Problem");
+                });
+
+            modelBuilder.Entity("MyMvcApp.Models.ContestRegistration", b =>
+                {
+                    b.HasOne("MyMvcApp.Models.Contest", "Contest")
+                        .WithMany()
+                        .HasForeignKey("ContestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_contest_registrations_contests_contest_id");
+
+                    b.HasOne("MyMvcApp.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_contest_registrations_users_user_id");
+
+                    b.Navigation("Contest");
+
+                    b.Navigation("User");
                 });
 #pragma warning restore 612, 618
         }

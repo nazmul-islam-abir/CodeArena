@@ -21,9 +21,11 @@ namespace MyMvcApp.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configure composite key for ContestRegistration
+            // Use Id as primary key (default convention)
+            // Add unique constraint to prevent duplicate registrations
             modelBuilder.Entity<ContestRegistration>()
-                .HasKey(cr => new { cr.ContestId, cr.UserName });
+                .HasIndex(cr => new { cr.ContestId, cr.UserName })
+                .IsUnique();
 
             // Configure ContestProblem relationships
             modelBuilder.Entity<ContestProblem>()
@@ -48,9 +50,6 @@ namespace MyMvcApp.Data
             modelBuilder.Entity<User>()
                 .Property(u => u.TotalPoints)
                 .HasDefaultValue(0);
-
-            // Ensure other models with no generic IDs aren't mapped wrongly,
-            // (e.g. ViewModels) - we simply don't add DbSets for ViewModels.
         }
     }
 }

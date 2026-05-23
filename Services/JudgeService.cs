@@ -32,6 +32,63 @@ namespace MyMvcApp.Services
             _logger.LogInformation($"JudgeService initialized with Judge0 API URL: {_judge0ApiUrl}");
         }
 
+        // Update JudgeService.cs - Add contest submission tracking
+        // Add this method to JudgeService.cs
+
+        private async Task UpdateContestStatisticsAsync(AppDbContext dbContext, int userId, int problemId, int contestId, double executionTime, int memoryUsed)
+        {
+            try
+            {
+                // Get contest problem details
+                var contestProblem = await dbContext.ContestProblems
+                    .FirstOrDefaultAsync(cp => cp.ContestId == contestId && cp.ProblemId == problemId);
+
+                if (contestProblem == null) return;
+
+                // Check if this is the first accepted submission for this user in this contest/problem
+                var existingAccepted = await dbContext.Submissions
+                    .AnyAsync(s => s.ContestId == contestId &&
+                                  s.ProblemId == problemId &&
+                                  s.UserId == userId &&
+                                  s.Verdict == "AC");
+
+                if (!existingAccepted)
+                {
+                    // Calculate points with penalty
+                    var contest = await dbContext.Contests.FindAsync(contestId);
+                    if (contest != null)
+                    {
+                        var wrongAttempts = await dbContext.Submissions
+                            .CountAsync(s => s.ContestId == contestId &&
+                                            s.ProblemId == problemId &&
+                                            s.UserId == userId &&
+                                            s.Verdict != "AC");
+
+                        var minutesFromStart = (int)(DateTime.UtcNow - contest.StartTime).TotalMinutes;
+                        var penalty = wrongAttempts * 20;
+                        var pointsEarned = Math.Max(0, contestProblem.Points - penalty - minutesFromStart);
+
+                        // Update user's total points
+                        var user = await dbContext.Users.FindAsync(userId);
+                        if (user != null)
+                        {
+                            user.TotalPoints += pointsEarned;
+                            user.ProblemsSolved += 1;
+                            await dbContext.SaveChangesAsync();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating contest statistics");
+            }
+        }
+
+        // Also update the ProcessSubmissionAsync method to call this when AC is achieved
+        // Add this line after updating user statistics in the AC block:
+        // await UpdateContestStatisticsAsync(dbContext, submission.UserId, problemId, contestId.Value, maxTime, maxMemory);
+
         public async Task<int> SubmitAsync(int userId, int problemId, string sourceCode, int languageId, string languageName, int? contestId = null)
         {
             // Create submission record with "Processing" status
@@ -221,7 +278,7 @@ namespace MyMvcApp.Services
             );
         }
 
-        private async Task<TestCaseResult> RunSingleTestCaseAsync(string sourceCode, int languageId, TestCase testCase, int timeLimitSeconds, int memoryLimitKb)
+        public async Task<TestCaseResult> RunSingleTestCaseAsync(string sourceCode, int languageId, TestCase testCase, int timeLimitSeconds, int memoryLimitKb)
         {
             var result = new TestCaseResult();
 

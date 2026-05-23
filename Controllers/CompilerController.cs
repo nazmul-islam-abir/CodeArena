@@ -58,7 +58,7 @@ public class CompilerController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Index(string sourceCode, int languageId = 54, int? problemId = null, int? contestId = null)
+    public async Task<IActionResult> Index(string sourceCode, int languageId = 54, int? problemId = null, int? contestId = null, string action = "submit")
     {
         var userId = HttpContext.Session.GetString("UserId");
         bool isLoggedIn = !string.IsNullOrEmpty(userId);
@@ -89,13 +89,68 @@ public class CompilerController : Controller
 
         var languageName = GetLanguageName(languageId);
 
-        // Submit asynchronously - returns immediately with submission ID
         if (!int.TryParse(userId, out int parsedUserId))
         {
             TempData["ErrorMessage"] = "Invalid user session. Please login again.";
             return RedirectToAction("Login", "Auth");
         }
 
+        if (action == "runSample")
+        {
+            var problem = await _context.Problems.FindAsync(problemId.Value);
+            if (problem == null)
+            {
+                TempData["ErrorMessage"] = "Problem not found.";
+                return RedirectToAction("Index", "Problem");
+            }
+
+            var sampleTestCase = new TestCase
+            {
+                Input = problem.SampleInput ?? string.Empty,
+                ExpectedOutput = problem.SampleOutput ?? string.Empty
+            };
+
+            var result = await _judgeService.RunSingleTestCaseAsync(
+                sourceCode, languageId, sampleTestCase, problem.TimeLimit, problem.MemoryLimit
+            );
+
+            ViewBag.Output = result.IsSuccess ? result.Output : (string.IsNullOrEmpty(result.ErrorMessage) ? result.Output : result.ErrorMessage);
+            ViewBag.ExpectedOutput = problem.SampleOutput;
+            
+            int statusCode = 3; // AC
+            string statusDesc = "Accepted";
+            if (result.Verdict == "WA") { statusCode = 4; statusDesc = "Wrong Answer"; }
+            else if (result.Verdict == "TLE") { statusCode = 5; statusDesc = "Time Limit Exceeded"; }
+            else if (result.Verdict == "MLE") { statusCode = 6; statusDesc = "Memory Limit Exceeded"; }
+            else if (result.Verdict == "RE") { statusCode = 7; statusDesc = "Runtime Error"; }
+            else if (result.Verdict == "CE") { statusCode = 8; statusDesc = "Compilation Error"; }
+            
+            ViewBag.StatusCode = statusCode;
+            ViewBag.StatusDescription = statusDesc;
+            if (result.ExecutionTime > 0) ViewBag.Time = result.ExecutionTime.ToString("0.000") + " s";
+            if (result.MemoryUsed > 0) ViewBag.Memory = (result.MemoryUsed / 1024.0).ToString("0.00") + " MB";
+            
+            ViewBag.SubmittedCode = sourceCode;
+            ViewBag.SelectedLanguage = languageId;
+            ViewBag.ProblemTitle = problem.Title;
+            ViewBag.ProblemDescription = problem.Description;
+            ViewBag.ProblemSampleInput = problem.SampleInput;
+            ViewBag.ProblemSampleOutput = problem.SampleOutput;
+            ViewBag.ProblemId = problemId;
+            ViewBag.ContestId = contestId;
+
+            // Preserve TempData for subsequent requests
+            TempData["ProblemTitle"] = problem.Title;
+            TempData["ProblemDescription"] = problem.Description;
+            TempData["ProblemSampleInput"] = problem.SampleInput;
+            TempData["ProblemSampleOutput"] = problem.SampleOutput;
+            TempData["ProblemId"] = problemId;
+            TempData["ContestId"] = contestId;
+
+            return View();
+        }
+
+        // Submit asynchronously - returns immediately with submission ID
         var submissionId = await _judgeService.SubmitAsync(
             parsedUserId,
             problemId.Value,

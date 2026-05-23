@@ -13,26 +13,12 @@ namespace MyMvcApp.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "contest_registrations",
-                columns: table => new
-                {
-                    contest_id = table.Column<int>(type: "integer", nullable: false),
-                    user_name = table.Column<string>(type: "text", nullable: false),
-                    registration_time = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
-                    status = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_contest_registrations", x => new { x.contest_id, x.user_name });
-                });
-
-            migrationBuilder.CreateTable(
                 name: "contests",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    title = table.Column<string>(type: "text", nullable: false),
+                    title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     description = table.Column<string>(type: "text", nullable: false),
                     organizer = table.Column<string>(type: "text", nullable: false),
                     start_time = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
@@ -51,7 +37,12 @@ namespace MyMvcApp.Migrations
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
                     is_frozen = table.Column<bool>(type: "boolean", nullable: false),
                     freeze_time = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
-                    is_deleted = table.Column<bool>(type: "boolean", nullable: false)
+                    is_deleted = table.Column<bool>(type: "boolean", nullable: false),
+                    max_participants = table.Column<int>(type: "integer", nullable: false),
+                    show_ranking_immediately = table.Column<bool>(type: "boolean", nullable: false),
+                    password = table.Column<string>(type: "text", nullable: false),
+                    is_private = table.Column<bool>(type: "boolean", nullable: false),
+                    rules = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -168,6 +159,7 @@ namespace MyMvcApp.Migrations
                     contest_id = table.Column<int>(type: "integer", nullable: false),
                     problem_id = table.Column<int>(type: "integer", nullable: false),
                     custom_title = table.Column<string>(type: "text", nullable: true),
+                    letter = table.Column<string>(type: "text", nullable: false),
                     order = table.Column<int>(type: "integer", nullable: false),
                     points = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -188,6 +180,35 @@ namespace MyMvcApp.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "contest_registrations",
+                columns: table => new
+                {
+                    contest_id = table.Column<int>(type: "integer", nullable: false),
+                    user_name = table.Column<string>(type: "text", nullable: false),
+                    id = table.Column<int>(type: "integer", nullable: false),
+                    user_id = table.Column<int>(type: "integer", nullable: false),
+                    registration_time = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    status = table.Column<string>(type: "text", nullable: false),
+                    password_entered = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_contest_registrations", x => new { x.contest_id, x.user_name });
+                    table.ForeignKey(
+                        name: "fk_contest_registrations_contests_contest_id",
+                        column: x => x.contest_id,
+                        principalTable: "contests",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_contest_registrations_users_user_id",
+                        column: x => x.user_id,
+                        principalTable: "users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "ix_contest_problems_contest_id",
                 table: "contest_problems",
@@ -197,6 +218,11 @@ namespace MyMvcApp.Migrations
                 name: "ix_contest_problems_problem_id",
                 table: "contest_problems",
                 column: "problem_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_contest_registrations_user_id",
+                table: "contest_registrations",
+                column: "user_id");
         }
 
         /// <inheritdoc />
@@ -215,13 +241,13 @@ namespace MyMvcApp.Migrations
                 name: "test_cases");
 
             migrationBuilder.DropTable(
-                name: "users");
+                name: "problems");
 
             migrationBuilder.DropTable(
                 name: "contests");
 
             migrationBuilder.DropTable(
-                name: "problems");
+                name: "users");
         }
     }
 }

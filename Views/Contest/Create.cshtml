@@ -1,4 +1,4 @@
-@model MyMvcApp.Models.Contest
+@model MyMvcApp.Models.ContestViewModel
 @{
     ViewData["Title"] = "Create Contest";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -19,27 +19,30 @@
                         
                         <div class="mb-3">
                             <label class="form-label fw-bold">Contest Title <span class="text-danger">*</span></label>
-                            <input type="text" name="Title" class="form-control" required placeholder="e.g., Weekly Contest #1" />
+                            <input asp-for="Contest.Title" class="form-control" required placeholder="e.g., Weekly Contest #1" />
+                            <span asp-validation-for="Contest.Title" class="text-danger"></span>
                         </div>
                         
                         <div class="mb-3">
                             <label class="form-label fw-bold">Description <span class="text-danger">*</span></label>
-                            <textarea name="Description" class="form-control" rows="4" required placeholder="Describe the contest..."></textarea>
+                            <textarea asp-for="Contest.Description" class="form-control" rows="4" required placeholder="Describe the contest..."></textarea>
+                            <span asp-validation-for="Contest.Description" class="text-danger"></span>
                         </div>
                         
                         <div class="mb-3">
                             <label class="form-label fw-bold">Organizer</label>
-                            <input type="text" name="Organizer" class="form-control" value="CodeArena" />
+                            <input asp-for="Contest.Organizer" class="form-control" value="CodeArena" />
                         </div>
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Start Date & Time <span class="text-danger">*</span></label>
-                                <input type="datetime-local" name="StartTime" class="form-control" required />
+                                <input asp-for="Contest.StartTime" type="datetime-local" class="form-control" required />
+                                <span asp-validation-for="Contest.StartTime" class="text-danger"></span>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Duration</label>
-                                <select name="Duration" class="form-select">
+                                <select asp-for="Contest.Duration" class="form-select">
                                     <option value="1 hour">1 hour</option>
                                     <option value="2 hours" selected>2 hours</option>
                                     <option value="3 hours">3 hours</option>
@@ -52,13 +55,35 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Difficulty</label>
-                                <select name="Difficulty" class="form-select">
+                                <select asp-for="Contest.Difficulty" class="form-select">
                                     <option value="Easy">Easy</option>
                                     <option value="Medium">Medium</option>
                                     <option value="Hard">Hard</option>
                                     <option value="Mixed" selected>Mixed</option>
                                 </select>
                             </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Max Participants</label>
+                                <input asp-for="Contest.MaxParticipants" type="number" class="form-control" value="1000" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input asp-for="Contest.IsPrivate" class="form-check-input" type="checkbox" id="isPrivateSwitch">
+                                    <label class="form-check-label fw-bold" for="isPrivateSwitch">Private Contest</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3" id="passwordField" style="display: none;">
+                                <label class="form-label fw-bold">Contest Password</label>
+                                <input asp-for="Contest.Password" type="password" class="form-control" placeholder="Enter password for private contest" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Rules (Optional)</label>
+                            <textarea asp-for="Contest.Rules" class="form-control" rows="3" placeholder="Contest rules, penalties, etc..."></textarea>
                         </div>
 
                         <div class="mb-3">
@@ -83,6 +108,12 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.getElementById('isPrivateSwitch').addEventListener('change', function() {
+        document.getElementById('passwordField').style.display = this.checked ? 'block' : 'none';
+    });
+</script>
 
 <style>
     .card {

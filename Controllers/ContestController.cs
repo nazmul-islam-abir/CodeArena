@@ -1,15 +1,15 @@
+// Controllers/ContestController.cs - Simplified version without IHttpContextAccessor
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using MyMvcApp.Models;
 using MyMvcApp.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Security.Claims;
 
 namespace MyMvcApp.Controllers
 {
+    [Route("Contest")]   // ← ADDED: Base route for all actions
     public class ContestController : Controller
     {
         private readonly AppDbContext _context;
@@ -18,92 +18,106 @@ namespace MyMvcApp.Controllers
         {
             _context = context;
         }
-        // GET: /Contest - List all contests
+
+        private int? GetCurrentUserId()
+        {
+            var userIdStr = HttpContext.Session.GetString("UserId") ??
+                           User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdStr, out int id) ? id : (int?)null;
+        }
+
+        private string GetCurrentUsername()
+        {
+            return HttpContext.Session.GetString("Username") ??
+                   User.Identity?.Name ?? string.Empty;
+        }
+
+        private bool IsAdmin()
+        {
+            var role = HttpContext.Session.GetString("UserRole");
+            return role == "Admin" || User.IsInRole("Admin");
+        }
+
+        // GET: /Contest
         [HttpGet("")]
-        [Route("/Contest")]
         public async Task<IActionResult> Index()
         {
             var contests = await _context.Contests
-                .Where(c => !c.IsDeleted)
+                .Where(c => !c.IsDeleted && c.IsActive)
                 .OrderByDescending(c => c.StartTime)
-                .Select(c => new Contest
-                {
-                    Id = c.Id,
-                    Title = c.Title,
-                    Description = c.Description,
-                    Organizer = c.Organizer,
-                    StartTime = c.StartTime,
-                    EndTime = c.EndTime,
-                    Duration = c.Duration,
-                    ParticipantCount = _context.ContestRegistrations.Count(r => r.ContestId == c.Id),
-                    ProblemCount = _context.ContestProblems.Count(p => p.ContestId == c.Id),
-                    Difficulty = c.Difficulty,
-                    Status = GetContestStatus(c.StartTime, c.EndTime),
-                    ContestLink = c.ContestLink,
-                    IsRegistered = false
-                })
                 .ToListAsync();
 
-            var username = HttpContext.Session.GetString("Username");
+            var username = GetCurrentUsername();
+            var registeredContestIds = new HashSet<int>();
+
             if (!string.IsNullOrEmpty(username))
             {
-                var registeredContestIds = await _context.ContestRegistrations
+                registeredContestIds = (await _context.ContestRegistrations
                     .Where(r => r.UserName == username)
                     .Select(r => r.ContestId)
-                    .ToListAsync();
-
-                foreach (var contest in contests)
-                {
-                    contest.IsRegistered = registeredContestIds.Contains(contest.Id);
-                }
+                    .ToListAsync()).ToHashSet();
             }
 
-            // Return the Index view with the list
-            return View("Index", contests);
+            foreach (var contest in contests)
+            {
+                contest.ParticipantCount = await _context.ContestRegistrations
+                    .CountAsync(r => r.ContestId == contest.Id && r.Status == "Approved");
+                contest.ProblemCount = await _context.ContestProblems
+                    .CountAsync(cp => cp.ContestId == contest.Id);
+                contest.Status = GetContestStatus(contest.StartTime, contest.EndTime);
+                contest.IsRegistered = registeredContestIds.Contains(contest.Id);
+            }
+
+            return View(contests);
         }
 
-        // GET: /Contest/{id} - Contest details with problems
+        // GET: /Contest/{id}
         [HttpGet("{id:int}")]
-        [Route("/Contest/{id:int}")]
         public async Task<IActionResult> Details(int id)
         {
             var contest = await _context.Contests
-                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted && c.IsActive);
 
-            if (contest == null)
-            {
-                return NotFound();
-            }
+            if (contest == null) return NotFound();
 
             contest.Status = GetContestStatus(contest.StartTime, contest.EndTime);
-            contest.ParticipantCount = await _context.ContestRegistrations.CountAsync(r => r.ContestId == id);
-            contest.ProblemCount = await _context.ContestProblems.CountAsync(p => p.ContestId == id);
+            contest.ParticipantCount = await _context.ContestRegistrations
+                .CountAsync(r => r.ContestId == id && r.Status == "Approved");
+            contest.ProblemCount = await _context.ContestProblems
+                .CountAsync(cp => cp.ContestId == id);
 
-            // Get problems with letters (A, B, C, D...)
-            var contestProblems = await _context.ContestProblems
-                .Where(cp => cp.ContestId == id)
-                .OrderBy(cp => cp.Order)
-                .Include(cp => cp.Problem)
-                .ToListAsync();
-
-            // Assign letters
-            for (int i = 0; i < contestProblems.Count; i++)
-            {
-                contestProblems[i].Letter = ((char)('A' + i)).ToString();
-            }
+            // Get problems with letters
+            var contestProblems = await GetContestProblemsWithLetters(id);
 
             ViewBag.Problems = contestProblems;
 
             // Check registration
-            var username = HttpContext.Session.GetString("Username");
+            var username = GetCurrentUsername();
+            var userId = GetCurrentUserId();
+
             if (!string.IsNullOrEmpty(username))
             {
                 contest.IsRegistered = await _context.ContestRegistrations
-                    .AnyAsync(r => r.ContestId == id && r.UserName == username);
+                    .AnyAsync(r => r.ContestId == id && r.UserName == username && r.Status == "Approved");
             }
 
-            // Return the Details view with a single contest
-            return View("Details", contest);
+            // Get user's solved status for each problem
+            if (contest.IsRegistered && userId.HasValue)
+            {
+                var solvedStatus = new Dictionary<string, bool>();
+                foreach (var cp in contestProblems)
+                {
+                    var solved = await _context.Submissions
+                        .AnyAsync(s => s.ContestId == id &&
+                                      s.ProblemId == cp.ProblemId &&
+                                      s.UserId == userId.Value &&
+                                      s.Verdict == "AC");
+                    solvedStatus[cp.Letter] = solved;
+                }
+                ViewBag.SolvedStatus = solvedStatus;
+            }
+
+            return View(contest);
         }
 
         // GET: /Contest/{id}/Problem/{letter}
@@ -111,79 +125,177 @@ namespace MyMvcApp.Controllers
         public async Task<IActionResult> Problem(int id, string letter)
         {
             var contest = await _context.Contests
-                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted && c.IsActive);
 
-            if (contest == null)
+            if (contest == null) return NotFound();
+
+            var isContestActive = DateTime.UtcNow >= contest.StartTime && DateTime.UtcNow <= contest.EndTime;
+            var isPractice = DateTime.UtcNow > contest.EndTime;
+            var username = GetCurrentUsername();
+            var userId = GetCurrentUserId();
+
+            // Check if user can access
+            var isRegistered = !string.IsNullOrEmpty(username) && await _context.ContestRegistrations
+                .AnyAsync(r => r.ContestId == id && r.UserName == username && r.Status == "Approved");
+
+            if (isContestActive && !isRegistered && !IsAdmin())
             {
-                return NotFound();
-            }
-
-            // Check if contest is active (for contest mode)
-            bool isContestActive = DateTime.Now >= contest.StartTime && DateTime.Now <= contest.EndTime;
-            bool isPractice = !isContestActive;
-
-            // Check if user is registered
-            var username = HttpContext.Session.GetString("Username");
-            bool isRegistered = false;
-            if (!string.IsNullOrEmpty(username))
-            {
-                isRegistered = await _context.ContestRegistrations
-                    .AnyAsync(r => r.ContestId == id && r.UserName == username);
-            }
-
-            if (isContestActive && !isRegistered)
-            {
-                TempData["ErrorMessage"] = "You must register for this contest to solve problems during contest time.";
+                TempData["ErrorMessage"] = "You must be registered for this contest to solve problems.";
                 return RedirectToAction("Details", new { id });
             }
 
             // Get problem by letter
-            var contestProblems = await _context.ContestProblems
-                .Where(cp => cp.ContestId == id)
-                .OrderBy(cp => cp.Order)
-                .Include(cp => cp.Problem)
-                .ToListAsync();
-
-            for (int i = 0; i < contestProblems.Count; i++)
-            {
-                contestProblems[i].Letter = ((char)('A' + i)).ToString();
-            }
+            var contestProblems = await GetContestProblemsWithLetters(id);
 
             var contestProblem = contestProblems.FirstOrDefault(cp => cp.Letter == letter.ToUpper());
+            if (contestProblem?.Problem == null) return NotFound();
 
-            if (contestProblem == null)
+            // Check if already solved (during contest, prevent resubmit for points)
+            if (isContestActive && userId.HasValue)
             {
-                return NotFound();
+                var alreadySolved = await _context.Submissions
+                    .AnyAsync(s => s.ContestId == id &&
+                                  s.ProblemId == contestProblem.ProblemId &&
+                                  s.UserId == userId.Value &&
+                                  s.Verdict == "AC");
+
+                if (alreadySolved)
+                {
+                    TempData["WarningMessage"] = "You have already solved this problem. No additional points will be awarded.";
+                }
             }
+
+            // Store contest context for the compiler
+            TempData["ContestId"] = id;
+            TempData["ContestTitle"] = contest.Title;
+            TempData["ContestLetter"] = letter;
+            TempData["ContestPoints"] = contestProblem.Points;
+
+            // Store problem info
+            TempData["ProblemId"] = contestProblem.ProblemId;
+            TempData["ProblemTitle"] = contestProblem.Problem.Title;
+            TempData["ProblemDescription"] = contestProblem.Problem.Description;
+            TempData["ProblemSampleInput"] = contestProblem.Problem.SampleInput;
+            TempData["ProblemSampleOutput"] = contestProblem.Problem.SampleOutput;
 
             ViewBag.Contest = contest;
             ViewBag.Letter = letter;
             ViewBag.IsContestActive = isContestActive;
             ViewBag.IsPractice = isPractice;
+            ViewBag.Points = contestProblem.Points;
 
             return View("Problem", contestProblem.Problem);
         }
 
-        // GET: /Contest/{id}/Submissions
-        [HttpGet("{id:int}/Submissions")]
-        public async Task<IActionResult> Submissions(int id)
+        // POST: /Contest/Register
+        [HttpPost("Register")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(int contestId, string? password = null)
         {
-            var contest = await _context.Contests.FindAsync(id);
-            if (contest == null) return NotFound();
+            var username = GetCurrentUsername();
+            var userId = GetCurrentUserId();
 
-            var username = HttpContext.Session.GetString("Username");
-            if (string.IsNullOrEmpty(username))
+            if (string.IsNullOrEmpty(username) || !userId.HasValue)
+            {
+                TempData["ErrorMessage"] = "Please login to register for contests.";
+                return RedirectToAction("Login", "Auth");
+            }
+
+            var contest = await _context.Contests.FindAsync(contestId);
+            if (contest == null)
+            {
+                TempData["ErrorMessage"] = "Contest not found.";
+                return RedirectToAction("Index");
+            }
+
+            // Check if registration is still open
+            if (DateTime.UtcNow > contest.StartTime)
+            {
+                TempData["ErrorMessage"] = "Registration closed. Contest has already started.";
+                return RedirectToAction("Details", new { id = contestId });
+            }
+
+            // Check password for private contests
+            if (contest.IsPrivate && !string.IsNullOrEmpty(contest.Password))
+            {
+                if (string.IsNullOrEmpty(password) || contest.Password != password)
+                {
+                    TempData["ErrorMessage"] = "Invalid contest password.";
+                    return RedirectToAction("Details", new { id = contestId });
+                }
+            }
+
+            // Check max participants
+            var currentCount = await _context.ContestRegistrations
+                .CountAsync(r => r.ContestId == contestId && r.Status == "Approved");
+
+            if (currentCount >= contest.MaxParticipants)
+            {
+                TempData["ErrorMessage"] = $"Registration full. Maximum {contest.MaxParticipants} participants allowed.";
+                return RedirectToAction("Details", new { id = contestId });
+            }
+
+            var existing = await _context.ContestRegistrations
+                .FirstOrDefaultAsync(r => r.ContestId == contestId && r.UserId == userId.Value);
+
+            if (existing == null)
+            {
+                _context.ContestRegistrations.Add(new ContestRegistration
+                {
+                    ContestId = contestId,
+                    UserId = userId.Value,
+                    UserName = username,
+                    RegistrationTime = DateTime.UtcNow,
+                    Status = contest.RequiresApproval ? "Pending" : "Approved",
+                    PasswordEntered = contest.IsPrivate ? password : null
+                });
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = contest.RequiresApproval
+                    ? "Registration submitted for approval."
+                    : "Successfully registered for the contest!";
+            }
+            else if (existing.Status == "Pending")
+            {
+                TempData["WarningMessage"] = "Your registration is pending approval.";
+            }
+            else
+            {
+                TempData["InfoMessage"] = "You are already registered for this contest.";
+            }
+
+            return RedirectToAction("Details", new { id = contestId });
+        }
+
+        // POST: /Contest/Unregister
+        [HttpPost("Unregister")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Unregister(int contestId)
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
             {
                 return RedirectToAction("Login", "Auth");
             }
 
-            var submissions = await _context.Submissions
-                .Where(s => s.ContestId == id && s.UserName == username)
-                .OrderByDescending(s => s.SubmittedAt)
-                .ToListAsync();
+            var contest = await _context.Contests.FindAsync(contestId);
+            if (contest != null && DateTime.UtcNow > contest.StartTime)
+            {
+                TempData["ErrorMessage"] = "Cannot unregister after contest has started.";
+                return RedirectToAction("Details", new { id = contestId });
+            }
 
-            ViewBag.Contest = contest;
-            return View(submissions);
+            var registration = await _context.ContestRegistrations
+                .FirstOrDefaultAsync(r => r.ContestId == contestId && r.UserId == userId.Value);
+
+            if (registration != null)
+            {
+                _context.ContestRegistrations.Remove(registration);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Successfully unregistered from contest.";
+            }
+
+            return RedirectToAction("Details", new { id = contestId });
         }
 
         // GET: /Contest/{id}/Ranking
@@ -193,163 +305,218 @@ namespace MyMvcApp.Controllers
             var contest = await _context.Contests
                 .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
 
-            if (contest == null)
-            {
-                return NotFound();
-            }
+            if (contest == null) return NotFound();
+
+            contest.ProblemCount = await _context.ContestProblems
+                .CountAsync(cp => cp.ContestId == id);
 
             var leaderboard = await GetLeaderboard(contest);
+            var isFrozen = contest.IsFrozen;
+
             ViewBag.Contest = contest;
-            ViewBag.IsFrozen = contest.IsFrozen && DateTime.Now >= contest.EndTime.AddMinutes(-30);
+            ViewBag.IsFrozen = isFrozen;
+            ViewBag.FreezeMessage = isFrozen ? "Leaderboard is frozen. Final results will be available after contest ends." : null;
+            ViewBag.CurrentUserId = GetCurrentUserId();
+            ViewBag.IsAdmin = IsAdmin();
 
             return View(leaderboard);
         }
 
-        // POST: /Contest/Register
-        [HttpPost("Register")]
-        public async Task<IActionResult> Register(int contestId)
+        // GET: /Contest/{id}/Ranking/Refresh - AJAX endpoint for real-time updates
+        [HttpGet("{id:int}/Ranking/Refresh")]
+        public async Task<IActionResult> RefreshRanking(int id)
         {
-            var username = HttpContext.Session.GetString("Username");
-            if (string.IsNullOrEmpty(username))
-                return RedirectToAction("Login", "Auth");
+            var contest = await _context.Contests.FindAsync(id);
+            if (contest == null) return Json(new { error = "Contest not found" });
 
-            var contest = await _context.Contests.FindAsync(contestId);
-            if (contest == null) return NotFound();
+            var leaderboard = await GetLeaderboard(contest);
+            var isFrozen = contest.IsFrozen;
 
-            if (DateTime.Now > contest.StartTime)
+            return Json(new
             {
-                TempData["ErrorMessage"] = "Registration closed. Contest has already started.";
-                return RedirectToAction("Details", new { id = contestId });
-            }
-
-            var existing = await _context.ContestRegistrations
-                .FirstOrDefaultAsync(r => r.ContestId == contestId && r.UserName == username);
-
-            if (existing == null)
-            {
-                _context.ContestRegistrations.Add(new ContestRegistration
-                {
-                    ContestId = contestId,
-                    UserName = username,
-                    RegistrationTime = DateTime.UtcNow,
-                    Status = "Approved"
-                });
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Successfully registered for the contest!";
-            }
-
-            return RedirectToAction("Details", new { id = contestId });
+                leaderboard = leaderboard.Select(e => new {
+                    e.Rank,
+                    e.UserName,
+                    e.FullName,
+                    e.SolvedCount,
+                    e.TotalPoints,
+                    e.LastSubmission,
+                    e.TotalTime,
+                    e.UserId,
+                    e.ProblemStatuses,
+                    isCurrentUser = e.UserId == GetCurrentUserId()
+                }),
+                isFrozen,
+                lastUpdate = DateTime.Now.ToString("HH:mm:ss")
+            });
         }
 
-        // POST: /Contest/Unregister
-        [HttpPost("Unregister")]
-        public async Task<IActionResult> Unregister(int contestId)
+        // GET: /Contest/{id}/Submissions
+        [HttpGet("{id:int}/Submissions")]
+        public async Task<IActionResult> Submissions(int id)
         {
-            var username = HttpContext.Session.GetString("Username");
-            if (string.IsNullOrEmpty(username))
-                return RedirectToAction("Login", "Auth");
+            var contest = await _context.Contests.FindAsync(id);
+            if (contest == null) return NotFound();
 
-            var registration = await _context.ContestRegistrations
-                .FirstOrDefaultAsync(r => r.ContestId == contestId && r.UserName == username);
-
-            if (registration != null)
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
             {
-                _context.ContestRegistrations.Remove(registration);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Unregistered from contest.";
+                return RedirectToAction("Login", "Auth");
             }
 
-            return RedirectToAction("Details", new { id = contestId });
+            var submissions = await _context.Submissions
+                .Where(s => s.ContestId == id && s.UserId == userId.Value)
+                .OrderByDescending(s => s.SubmittedAt)
+                .ToListAsync();
+
+            ViewBag.Contest = contest;
+            return View(submissions);
         }
 
         // GET: /Contest/Join
         [HttpGet("Join")]
         public async Task<IActionResult> Join(string link)
         {
+            if (string.IsNullOrEmpty(link))
+            {
+                return RedirectToAction("Index");
+            }
+
             var contest = await _context.Contests
-                .FirstOrDefaultAsync(c => c.ContestLink == link && !c.IsDeleted);
+                .FirstOrDefaultAsync(c => c.ContestLink == link && !c.IsDeleted && c.IsActive);
 
             if (contest == null)
-                return NotFound();
+            {
+                TempData["ErrorMessage"] = "Invalid or expired contest link.";
+                return RedirectToAction("Index");
+            }
 
             return RedirectToAction("Details", new { id = contest.Id });
         }
 
         #region Admin Actions
 
+        // GET: /Contest/Create
         [Authorize(Roles = "Admin")]
         [HttpGet("Create")]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            return View();
+            var model = new ContestViewModel
+            {
+                Contest = new Contest
+                {
+                    StartTime = DateTime.Now.AddDays(7),
+                    Duration = "2 hours",
+                    Difficulty = "Mixed",
+                    MaxParticipants = 1000,
+                    ShowRankingImmediately = true
+                },
+                AvailableProblems = await _context.Problems.Where(p => p.IsActive).OrderBy(p => p.Id).ToListAsync()
+            };
+            return View(model);
         }
 
-        [HttpPost("Create")]
+        // POST: /Contest/Create
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Create(Contest newContest, string problemIds)
+        [HttpPost("Create")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(ContestViewModel model, string? problemIds)
         {
-            if (string.IsNullOrEmpty(problemIds))
+            // Parse problem IDs
+            var idList = new List<int>();
+            if (!string.IsNullOrEmpty(problemIds))
             {
-                ModelState.AddModelError("problemIds", "At least one problem ID is required.");
-                return View(newContest);
+                idList = problemIds.Split(',')
+                    .Select(id => int.TryParse(id.Trim(), out int val) ? val : 0)
+                    .Where(i => i > 0)
+                    .Distinct()
+                    .ToList();
+            }
+            else if (!string.IsNullOrEmpty(model.ProblemIdsString))
+            {
+                idList = model.ProblemIdsString.Split(',')
+                    .Select(id => int.TryParse(id.Trim(), out int val) ? val : 0)
+                    .Where(i => i > 0)
+                    .Distinct()
+                    .ToList();
             }
 
-            var idList = problemIds.Split(',')
-                .Select(id => int.TryParse(id.Trim(), out int val) ? val : 0)
-                .Where(i => i > 0)
-                .Distinct()
-                .ToList();
+            if (idList.Count == 0)
+            {
+                ModelState.AddModelError("", "At least one problem is required.");
+                model.AvailableProblems = await _context.Problems.Where(p => p.IsActive).OrderBy(p => p.Id).ToListAsync();
+                return View(model);
+            }
 
-            var existingProblemIds = await _context.Problems
-                .Where(p => idList.Contains(p.Id))
-                .Select(p => p.Id)
+            var existingProblems = await _context.Problems
+                .Where(p => idList.Contains(p.Id) && p.IsActive)
                 .ToListAsync();
 
-            newContest.CreatedAt = DateTime.UtcNow;
-            newContest.Status = "Upcoming";
-            newContest.IsActive = true;
-            newContest.RequiresApproval = false;
-            newContest.ApprovalStatus = "Approved";
-            newContest.ContestLink = Guid.NewGuid().ToString().Substring(0, 8);
-
-            if (!string.IsNullOrEmpty(newContest.Duration) && newContest.Duration.Contains("hour"))
+            if (existingProblems.Count == 0)
             {
-                if (int.TryParse(newContest.Duration.Split(' ')[0], out int hours))
-                {
-                    newContest.EndTime = newContest.StartTime.AddHours(hours);
-                }
-                else
-                {
-                    newContest.EndTime = newContest.StartTime.AddHours(2);
-                }
+                ModelState.AddModelError("", "No valid problems found.");
+                model.AvailableProblems = await _context.Problems.Where(p => p.IsActive).OrderBy(p => p.Id).ToListAsync();
+                return View(model);
+            }
+
+            var contest = model.Contest;
+
+            // Ensure StartTime is in UTC
+            if (contest.StartTime.Kind == DateTimeKind.Local)
+            {
+                contest.StartTime = contest.StartTime.ToUniversalTime();
+            }
+            else if (contest.StartTime.Kind == DateTimeKind.Unspecified)
+            {
+                contest.StartTime = DateTime.SpecifyKind(contest.StartTime, DateTimeKind.Local).ToUniversalTime();
+            }
+
+            contest.CreatedAt = DateTime.UtcNow;
+            contest.Status = "Upcoming";
+            contest.IsActive = true;
+            contest.RequiresApproval = false;
+            contest.ApprovalStatus = "Approved";
+            contest.ContestLink = Guid.NewGuid().ToString().Substring(0, 8);
+
+            // Calculate end time
+            if (!string.IsNullOrEmpty(contest.Duration) && contest.Duration.Contains("hour"))
+            {
+                var hoursMatch = System.Text.RegularExpressions.Regex.Match(contest.Duration, @"\d+");
+                int hours = hoursMatch.Success ? int.Parse(hoursMatch.Value) : 2;
+                contest.EndTime = contest.StartTime.AddHours(hours);
             }
             else
             {
-                newContest.EndTime = newContest.StartTime.AddHours(2);
+                contest.EndTime = contest.StartTime.AddHours(2);
             }
 
-            _context.Contests.Add(newContest);
+            _context.Contests.Add(contest);
             await _context.SaveChangesAsync();
 
             int order = 1;
-            foreach (var pId in existingProblemIds)
+            foreach (var problem in existingProblems)
             {
                 _context.ContestProblems.Add(new ContestProblem
                 {
-                    ContestId = newContest.Id,
-                    ProblemId = pId,
+                    ContestId = contest.Id,
+                    ProblemId = problem.Id,
                     Order = order++,
-                    Points = 100
+                    Points = problem.Points
                 });
             }
 
-            newContest.ProblemCount = existingProblemIds.Count;
+            // REMOVED: contest.ProblemCount = existingProblemIds.Count;
+            // (ProblemCount is [NotMapped] and will be calculated on query)
+
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Contest '{newContest.Title}' created successfully! Join link: /Contest/Join?link={newContest.ContestLink}";
-            return RedirectToAction("Index");
+            TempData["SuccessMessage"] = $"Contest '{contest.Title}' created successfully!";
+            TempData["ContestLink"] = $"/Contest/Join?link={contest.ContestLink}";
+
+            return RedirectToAction("Details", new { id = contest.Id });
         }
 
+        // GET: /Contest/Edit/{id}
         [Authorize(Roles = "Admin")]
         [HttpGet("Edit/{id:int}")]
         public async Task<IActionResult> Edit(int id)
@@ -357,54 +524,93 @@ namespace MyMvcApp.Controllers
             var contest = await _context.Contests.FindAsync(id);
             if (contest == null || contest.IsDeleted) return NotFound();
 
-            var problems = await _context.ContestProblems
+            var contestProblems = await _context.ContestProblems
                 .Where(cp => cp.ContestId == id)
                 .OrderBy(cp => cp.Order)
-                .Select(cp => cp.ProblemId)
                 .ToListAsync();
 
-            ViewBag.ProblemIds = string.Join(",", problems);
-            return View(contest);
+            var model = new ContestViewModel
+            {
+                Contest = contest,
+                SelectedProblemIds = contestProblems.Select(cp => cp.ProblemId).ToList(),
+                AvailableProblems = await _context.Problems.Where(p => p.IsActive).OrderBy(p => p.Id).ToListAsync(),
+                ProblemIdsString = string.Join(",", contestProblems.Select(cp => cp.ProblemId))
+            };
+
+            return View(model);
         }
 
-        [HttpPost("Edit/{id:int}")]
+        // POST: /Contest/Edit/{id}
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Edit(int id, Contest updatedContest, string problemIds)
+        [HttpPost("Edit/{id:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, ContestViewModel model, string? problemIds)
         {
             var contest = await _context.Contests.FindAsync(id);
             if (contest == null || contest.IsDeleted) return NotFound();
 
-            if (string.IsNullOrEmpty(problemIds))
+            // Parse problem IDs
+            var idList = new List<int>();
+            if (!string.IsNullOrEmpty(problemIds))
             {
-                ModelState.AddModelError("problemIds", "At least one problem ID is required.");
-                return View(updatedContest);
+                idList = problemIds.Split(',')
+                    .Select(pid => int.TryParse(pid.Trim(), out int val) ? val : 0)
+                    .Where(i => i > 0)
+                    .Distinct()
+                    .ToList();
             }
 
-            var idList = problemIds.Split(',')
-                .Select(pid => int.TryParse(pid.Trim(), out int val) ? val : 0)
-                .Where(i => i > 0)
-                .Distinct()
-                .ToList();
+            if (idList.Count == 0 && !string.IsNullOrEmpty(model.ProblemIdsString))
+            {
+                idList = model.ProblemIdsString.Split(',')
+                    .Select(pid => int.TryParse(pid.Trim(), out int val) ? val : 0)
+                    .Where(i => i > 0)
+                    .Distinct()
+                    .ToList();
+            }
 
-            var existingProblemIds = await _context.Problems
-                .Where(p => idList.Contains(p.Id))
-                .Select(p => p.Id)
+            if (idList.Count == 0)
+            {
+                ModelState.AddModelError("", "At least one problem is required.");
+                model.AvailableProblems = await _context.Problems.Where(p => p.IsActive).OrderBy(p => p.Id).ToListAsync();
+                return View(model);
+            }
+
+            var existingProblems = await _context.Problems
+                .Where(p => idList.Contains(p.Id) && p.IsActive)
                 .ToListAsync();
 
-            // Update metadata
-            contest.Title = updatedContest.Title;
-            contest.Description = updatedContest.Description;
-            contest.Organizer = updatedContest.Organizer;
-            contest.StartTime = updatedContest.StartTime;
-            contest.Difficulty = updatedContest.Difficulty;
-            contest.Duration = updatedContest.Duration;
+            // Update contest properties
+            contest.Title = model.Contest.Title;
+            contest.Description = model.Contest.Description;
+            contest.Organizer = model.Contest.Organizer;
 
+            // Ensure StartTime is in UTC
+            var newStartTime = model.Contest.StartTime;
+            if (newStartTime.Kind == DateTimeKind.Local)
+            {
+                newStartTime = newStartTime.ToUniversalTime();
+            }
+            else if (newStartTime.Kind == DateTimeKind.Unspecified)
+            {
+                newStartTime = DateTime.SpecifyKind(newStartTime, DateTimeKind.Local).ToUniversalTime();
+            }
+            contest.StartTime = newStartTime;
+
+            contest.Difficulty = model.Contest.Difficulty;
+            contest.Duration = model.Contest.Duration;
+            contest.MaxParticipants = model.Contest.MaxParticipants;
+            contest.ShowRankingImmediately = model.Contest.ShowRankingImmediately;
+            contest.IsPrivate = model.Contest.IsPrivate;
+            contest.Password = model.Contest.IsPrivate ? model.Contest.Password : string.Empty;
+            contest.Rules = model.Contest.Rules;
+
+            // Calculate end time
             if (!string.IsNullOrEmpty(contest.Duration) && contest.Duration.Contains("hour"))
             {
-                if (int.TryParse(contest.Duration.Split(' ')[0], out int hours))
-                    contest.EndTime = contest.StartTime.AddHours(hours);
-                else
-                    contest.EndTime = contest.StartTime.AddHours(2);
+                var hoursMatch = System.Text.RegularExpressions.Regex.Match(contest.Duration, @"\d+");
+                int hours = hoursMatch.Success ? int.Parse(hoursMatch.Value) : 2;
+                contest.EndTime = contest.StartTime.AddHours(hours);
             }
             else
             {
@@ -416,26 +622,30 @@ namespace MyMvcApp.Controllers
             _context.ContestProblems.RemoveRange(currentProblems);
 
             int order = 1;
-            foreach (var pId in existingProblemIds)
+            foreach (var problem in existingProblems)
             {
                 _context.ContestProblems.Add(new ContestProblem
                 {
                     ContestId = id,
-                    ProblemId = pId,
+                    ProblemId = problem.Id,
                     Order = order++,
-                    Points = 100
+                    Points = problem.Points
                 });
             }
 
-            contest.ProblemCount = existingProblemIds.Count;
+            // REMOVED: contest.ProblemCount = existingProblemIds.Count;
+            // (ProblemCount is [NotMapped] and will be calculated on query)
+
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Contest updated successfully!";
-            return RedirectToAction("Details", new { id = id });
+            return RedirectToAction("Details", new { id });
         }
 
+        // POST: /Contest/Delete/{id}
         [Authorize(Roles = "Admin")]
         [HttpPost("Delete/{id:int}")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             var contest = await _context.Contests.FindAsync(id);
@@ -443,34 +653,93 @@ namespace MyMvcApp.Controllers
             {
                 contest.IsDeleted = true;
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Contest deleted.";
+                TempData["SuccessMessage"] = "Contest deleted successfully.";
             }
             return RedirectToAction("Index");
         }
 
+        // POST: /Contest/ToggleFreeze/{id}
         [Authorize(Roles = "Admin")]
         [HttpPost("ToggleFreeze/{id:int}")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleFreeze(int id)
         {
             var contest = await _context.Contests.FindAsync(id);
             if (contest != null)
             {
                 contest.IsFrozen = !contest.IsFrozen;
-                if (contest.IsFrozen) contest.FreezeTime = DateTime.UtcNow;
-                else contest.FreezeTime = null;
+                contest.FreezeTime = contest.IsFrozen ? DateTime.UtcNow : null;
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = contest.IsFrozen ? "Leaderboard frozen!" : "Leaderboard unfrozen!";
+
+                TempData["SuccessMessage"] = contest.IsFrozen
+                    ? "Rankings are now frozen. Participants cannot see final standings until after contest ends."
+                    : "Rankings are now unfrozen.";
             }
-            return RedirectToAction("Details", new { id = id });
+            return RedirectToAction("Details", new { id });
+        }
+
+        // GET: /Contest/{id}/Registrations
+        [Authorize(Roles = "Admin")]
+        [HttpGet("{id:int}/Registrations")]
+        public async Task<IActionResult> Registrations(int id)
+        {
+            var contest = await _context.Contests.FindAsync(id);
+            if (contest == null) return NotFound();
+
+            var registrations = await _context.ContestRegistrations
+                .Where(r => r.ContestId == id)
+                .OrderByDescending(r => r.RegistrationTime)
+                .ToListAsync();
+
+            ViewBag.Contest = contest;
+            return View(registrations);
+        }
+
+        // POST: /Contest/ApproveRegistration
+        [Authorize(Roles = "Admin")]
+        [HttpPost("ApproveRegistration")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveRegistration(int contestId, int userId)
+        {
+            var registration = await _context.ContestRegistrations
+                .FirstOrDefaultAsync(r => r.ContestId == contestId && r.UserId == userId);
+
+            if (registration != null)
+            {
+                registration.Status = "Approved";
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Registration for {registration.UserName} approved.";
+            }
+
+            return RedirectToAction("Registrations", new { id = contestId });
+        }
+
+        // POST: /Contest/RejectRegistration
+        [Authorize(Roles = "Admin")]
+        [HttpPost("RejectRegistration")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectRegistration(int contestId, int userId)
+        {
+            var registration = await _context.ContestRegistrations
+                .FirstOrDefaultAsync(r => r.ContestId == contestId && r.UserId == userId);
+
+            if (registration != null)
+            {
+                _context.ContestRegistrations.Remove(registration);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Registration for {registration.UserName} rejected and removed.";
+            }
+
+            return RedirectToAction("Registrations", new { id = contestId });
         }
 
         #endregion
 
         #region Helper Methods
 
-        private static string GetContestStatus(DateTime startTime, DateTime endTime)
+        private string GetContestStatus(DateTime startTime, DateTime endTime)
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             if (now < startTime) return "Upcoming";
             if (now <= endTime) return "Active";
             return "Ended";
@@ -479,33 +748,39 @@ namespace MyMvcApp.Controllers
         private async Task<List<ContestLeaderboardEntry>> GetLeaderboard(Contest contest)
         {
             var registrations = await _context.ContestRegistrations
-                .Where(r => r.ContestId == contest.Id)
-                .Select(r => r.UserName)
+                .Where(r => r.ContestId == contest.Id && r.Status == "Approved")
                 .ToListAsync();
 
+            // Get user details separately
+            var userIds = registrations.Select(r => r.UserId).Distinct().ToList();
+            var users = await _context.Users
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u);
+
+            var contestProblems = await GetContestProblemsWithLetters(contest.Id);
+
+            // Get all submissions for this contest
             var allSubmissions = await _context.Submissions
-                .Where(s => s.ContestId == contest.Id && s.SubmittedAt >= contest.StartTime)
+                .Where(s => s.ContestId == contest.Id)
+                .OrderBy(s => s.SubmittedAt)
                 .ToListAsync();
 
             // Apply freeze logic
-            bool isAdmin = HttpContext.Session.GetString("UserRole") == "Admin";
+            var isAdmin = IsAdmin();
             if (contest.IsFrozen && !isAdmin && contest.FreezeTime.HasValue)
             {
                 allSubmissions = allSubmissions.Where(s => s.SubmittedAt <= contest.FreezeTime.Value).ToList();
             }
 
-            var contestProblems = await _context.ContestProblems
-                .Where(cp => cp.ContestId == contest.Id)
-                .OrderBy(cp => cp.Order)
-                .ToListAsync();
-
             var leaderboard = new List<ContestLeaderboardEntry>();
 
-            foreach (var username in registrations)
+            foreach (var reg in registrations)
             {
-                var userSubmissions = allSubmissions.Where(s => s.UserName == username).ToList();
+                var user = users.GetValueOrDefault(reg.UserId);
+                var userSubmissions = allSubmissions.Where(s => s.UserId == reg.UserId).ToList();
                 var solvedProblems = new Dictionary<int, Submission>();
                 var attempts = new Dictionary<int, int>();
+                var solvedTimes = new Dictionary<int, int>();
 
                 foreach (var cp in contestProblems)
                 {
@@ -519,7 +794,12 @@ namespace MyMvcApp.Controllers
                     if (acceptedSubmission != null)
                     {
                         solvedProblems[cp.ProblemId] = acceptedSubmission;
-                        attempts[cp.ProblemId] = problemSubmissions.Count(s => s.Verdict != "AC");
+                        var wrongAttempts = problemSubmissions.Count(s => s.Verdict != "AC");
+                        attempts[cp.ProblemId] = wrongAttempts;
+
+                        var timeFromStart = (int)(acceptedSubmission.SubmittedAt - contest.StartTime).TotalMinutes;
+                        if (timeFromStart < 0) timeFromStart = 0;
+                        solvedTimes[cp.ProblemId] = timeFromStart;
                     }
                     else
                     {
@@ -529,7 +809,9 @@ namespace MyMvcApp.Controllers
 
                 int totalPoints = 0;
                 int solvedCount = 0;
+                int totalTime = 0;
                 string lastSubmission = "N/A";
+                DateTime? lastTime = null;
 
                 foreach (var cp in contestProblems)
                 {
@@ -538,31 +820,66 @@ namespace MyMvcApp.Controllers
                         solvedCount++;
                         var sub = solvedProblems[cp.ProblemId];
                         int penalty = attempts[cp.ProblemId] * 20;
-                        int timePoints = (int)(sub.SubmittedAt - contest.StartTime).TotalMinutes;
-                        totalPoints += cp.Points - penalty - timePoints;
-                        if (totalPoints < 0) totalPoints = 0;
+                        int timePoints = solvedTimes[cp.ProblemId];
 
-                        if (lastSubmission == "N/A" || sub.SubmittedAt > solvedProblems.Values.Max(s => s.SubmittedAt))
+                        int pointsEarned = Math.Max(0, cp.Points - penalty - timePoints);
+                        totalPoints += pointsEarned;
+                        totalTime += timePoints + penalty;
+
+                        if (lastTime == null || sub.SubmittedAt > lastTime)
                         {
-                            lastSubmission = sub.SubmittedAt.ToString("HH:mm");
+                            lastTime = sub.SubmittedAt;
+                            lastSubmission = sub.SubmittedAt.ToString("HH:mm:ss");
                         }
                     }
                 }
 
                 leaderboard.Add(new ContestLeaderboardEntry
                 {
-                    UserName = username,
+                    UserId = reg.UserId,
+                    UserName = reg.UserName,
+                    FullName = user?.FullName ?? reg.UserName,
                     SolvedCount = solvedCount,
                     TotalPoints = totalPoints,
-                    LastSubmission = lastSubmission
+                    LastSubmission = lastSubmission,
+                    TotalTime = totalTime,
+                    ProblemStatuses = contestProblems.Select(cp => new ProblemSubmissionStatus
+                    {
+                        Letter = cp.Letter,
+                        ProblemTitle = cp.Problem?.Title ?? $"Problem {cp.Letter}",
+                        IsSolved = solvedProblems.ContainsKey(cp.ProblemId),
+                        Attempts = attempts.GetValueOrDefault(cp.ProblemId, 0),
+                        Points = cp.Points,
+                        SubmissionTime = solvedProblems.ContainsKey(cp.ProblemId)
+                            ? solvedProblems[cp.ProblemId].SubmittedAt.ToString("HH:mm:ss")
+                            : "-",
+                        TimeFromStart = solvedTimes.GetValueOrDefault(cp.ProblemId, 0)
+                    }).ToList()
                 });
             }
 
             return leaderboard
-                .OrderByDescending(u => u.SolvedCount)
-                .ThenByDescending(u => u.TotalPoints)
+                .OrderByDescending(e => e.SolvedCount)
+                .ThenByDescending(e => e.TotalPoints)
+                .ThenBy(e => e.TotalTime)
                 .Select((entry, index) => { entry.Rank = index + 1; return entry; })
                 .ToList();
+        }
+
+        private async Task<List<ContestProblem>> GetContestProblemsWithLetters(int contestId)
+        {
+            var contestProblems = await _context.ContestProblems
+                .Where(cp => cp.ContestId == contestId)
+                .OrderBy(cp => cp.Order)
+                .Include(cp => cp.Problem)
+                .ToListAsync();
+
+            for (int i = 0; i < contestProblems.Count; i++)
+            {
+                contestProblems[i].Letter = ((char)('A' + i)).ToString();
+            }
+
+            return contestProblems;
         }
 
         #endregion

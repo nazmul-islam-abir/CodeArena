@@ -1,0 +1,317 @@
+﻿@model List<MyMvcApp.Models.ContestLeaderboardEntry>
+@{
+    ViewData["Title"] = $"Contest Leaderboard - {ViewBag.Contest?.Title}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var contest = ViewBag.Contest as MyMvcApp.Models.Contest;
+    var isFrozen = ViewBag.IsFrozen == true;
+    var currentUserId = ViewBag.CurrentUserId as int?;
+    var isAdmin = ViewBag.IsAdmin == true;
+}
+
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold"><i class="bi bi-trophy-fill me-2 text-warning"></i>Ranking</h2>
+            <p class="text-secondary mb-0">@contest?.Title</p>
+        </div>
+        <div>
+            <a href="/Contest/@contest?.Id" class="btn btn-outline-theme">
+                <i class="bi bi-arrow-left me-2"></i>Back to Contest
+            </a>
+            <button id="refreshBtn" class="btn btn-outline-primary ms-2">
+                <i class="bi bi-arrow-repeat me-1"></i>Refresh
+            </button>
+        </div>
+    </div>
+
+    @if (isFrozen)
+    {
+        <div class="alert alert-warning mb-4">
+            <i class="bi bi-snow2 me-2"></i>
+            <strong>Leaderboard is frozen.</strong> Final standings will be revealed after the contest ends.
+            @if (isAdmin)
+            {
+                <span>As an admin, you can still see full details.</span>
+            }
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="rankingTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th style="width: 70px">#</th>
+                            <th>Participant</th>
+                            <th class="text-center">Solved</th>
+                            <th class="text-center">Points</th>
+                            @if (contest?.ProblemCount > 0)
+                            {
+                                // Generate columns for each problem letter
+                                var firstEntry = Model.FirstOrDefault();
+                                if (firstEntry?.ProblemStatuses != null)
+                                {
+                                    foreach (var problem in firstEntry.ProblemStatuses)
+                                    {
+                                        <th class="text-center">@problem.Letter</th>
+                                    }
+                                }
+                                else
+                                {
+                                    // Fallback – show generic problem columns
+                                    for (int i = 0; i < contest.ProblemCount; i++)
+                                    {
+                                        <th class="text-center">@((char)('A' + i))</th>
+                                    }
+                                }
+                            }
+                            <th class="text-center">Last AC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var entry in Model)
+                            {
+                                var isCurrentUser = entry.UserId == currentUserId;
+                                <tr class="@(isCurrentUser ? "table-active fw-bold" : "")">
+                                    <td class="fw-bold">@entry.Rank</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                <i class="bi bi-person-fill text-secondary"></i>
+                                            </div>
+                                            <div>
+                                                <div>@entry.UserName</div>
+                                                <small class="text-secondary">@entry.FullName</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center fw-bold">@entry.SolvedCount</td>
+                                    <td class="text-center text-primary fw-bold">@entry.TotalPoints</td>
+                                    @if (entry.ProblemStatuses != null && entry.ProblemStatuses.Any())
+                                    {
+                                        foreach (var problem in entry.ProblemStatuses)
+                                        {
+                                            <td class="text-center">
+                                                @if (problem.IsSolved)
+                                                {
+                                                    <span class="badge bg-success" title="Solved at @problem.SubmissionTime (+@problem.TimeFromStart min)">
+                                                        ✔ @problem.Attempts
+                                                    </span>
+                                                }
+                                                else if (problem.Attempts > 0)
+                                                {
+                                                    <span class="badge bg-danger" title="@problem.Attempts wrong attempts">
+                                                        ✘ @problem.Attempts
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">-</span>
+                                                }
+                                            </td>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // Fill empty cells if ProblemStatuses missing
+                                        for (int i = 0; i < (contest?.ProblemCount ?? 0); i++)
+                                        {
+                                            <td class="text-center"><span class="badge bg-secondary">-</span></td>
+                                        }
+                                    }
+                                    <td class="text-center">
+                                        @if (entry.LastSubmission != "N/A")
+                                        {
+                                            <small>@entry.LastSubmission</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-secondary">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="@(5 + (contest?.ProblemCount ?? 0))" class="text-center py-5 text-secondary">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No participants yet.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Last update info -->
+    <div class="mt-3 text-center text-secondary small">
+        <i class="bi bi-clock-history me-1"></i> Last update: <span id="lastUpdateTime">@DateTime.Now.ToString("HH:mm:ss")</span>
+        @if (!isFrozen || isAdmin)
+        {
+            <span>(auto‑refresh every 30s)</span>
+        }
+        else
+        {
+            <span>(frozen – final results after contest ends)</span>
+        }
+    </div>
+</div>
+
+<script>
+    // Auto-refresh leaderboard every 30 seconds (only if not frozen or admin)
+    const isFrozen = @Json.Serialize(isFrozen);
+    const isAdmin = @Json.Serialize(isAdmin);
+    const contestId = @(contest?.Id ?? 0);
+
+    if ((!isFrozen || isAdmin) && contestId > 0) {
+        setInterval(function() {
+            fetch(`/Contest/${contestId}/Ranking/Refresh`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.leaderboard) {
+                        updateLeaderboard(data.leaderboard, data.isFrozen);
+                        document.getElementById('lastUpdateTime').innerText = data.lastUpdate || new Date().toLocaleTimeString();
+                    }
+                })
+                .catch(err => console.error('Refresh failed:', err));
+        }, 30000);
+    }
+
+    function updateLeaderboard(leaderboard, frozen) {
+        const tbody = document.querySelector('#rankingTable tbody');
+        if (!tbody) return;
+
+        // Clear existing rows
+        tbody.innerHTML = '';
+
+        if (leaderboard.length === 0) {
+            const colspan = document.querySelector('#rankingTable thead th').colSpan || 10;
+            tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-5 text-secondary">No participants yet.</td></tr>`;
+            return;
+        }
+
+        // Get problem letters from first entry
+        const problemLetters = leaderboard[0].problemStatuses ? leaderboard[0].problemStatuses.map(p => p.letter) : [];
+
+        leaderboard.forEach(entry => {
+            const row = tbody.insertRow();
+            row.className = entry.isCurrentUser ? 'table-active fw-bold' : '';
+
+            // Rank
+            row.insertCell(0).innerHTML = `<span class="fw-bold">${entry.rank}</span>`;
+            // User
+            row.insertCell(1).innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width:32px;height:32px;">
+                        <i class="bi bi-person-fill text-secondary"></i>
+                    </div>
+                    <div>
+                        <div>${escapeHtml(entry.userName)}</div>
+                        <small class="text-secondary">${escapeHtml(entry.fullName)}</small>
+                    </div>
+                </div>
+            `;
+            // Solved
+            row.insertCell(2).innerHTML = `<div class="text-center fw-bold">${entry.solvedCount}</div>`;
+            // Points
+            row.insertCell(3).innerHTML = `<div class="text-center text-primary fw-bold">${entry.totalPoints}</div>`;
+
+            // Problem columns
+            if (entry.problemStatuses && entry.problemStatuses.length) {
+                entry.problemStatuses.forEach(prob => {
+                    let cell = row.insertCell();
+                    cell.className = 'text-center';
+                    if (prob.isSolved) {
+                        cell.innerHTML = `<span class="badge bg-success" title="Solved at ${prob.submissionTime} (+${prob.timeFromStart} min)">✔ ${prob.attempts}</span>`;
+                    } else if (prob.attempts > 0) {
+                        cell.innerHTML = `<span class="badge bg-danger" title="${prob.attempts} wrong attempts">✘ ${prob.attempts}</span>`;
+                    } else {
+                        cell.innerHTML = `<span class="badge bg-secondary">-</span>`;
+                    }
+                });
+            } else {
+                // Fill empty cells
+                problemLetters.forEach(() => {
+                    let cell = row.insertCell();
+                    cell.className = 'text-center';
+                    cell.innerHTML = `<span class="badge bg-secondary">-</span>`;
+                });
+            }
+
+            // Last submission
+            let lastCell = row.insertCell();
+            lastCell.className = 'text-center';
+            lastCell.innerHTML = entry.lastSubmission !== 'N/A' ? `<small>${escapeHtml(entry.lastSubmission)}</small>` : `<span class="text-secondary">—</span>`;
+        });
+
+        // If frozen and not admin, show warning (could add banner)
+        if (frozen && !isAdmin) {
+            // Show a small warning if not already present
+            let alertDiv = document.querySelector('.alert-warning');
+            if (!alertDiv) {
+                const container = document.querySelector('.container');
+                const warning = document.createElement('div');
+                warning.className = 'alert alert-warning mb-4';
+                warning.innerHTML = '<i class="bi bi-snow2 me-2"></i><strong>Leaderboard is frozen.</strong> Final standings will be revealed after the contest ends.';
+                if (container.firstChild) container.insertBefore(warning, container.firstChild);
+            }
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // Manual refresh button
+    document.getElementById('refreshBtn')?.addEventListener('click', function() {
+        location.reload();
+    });
+</script>
+
+<style>
+    .table-active {
+        background-color: var(--primary-light) !important;
+    }
+
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.65rem;
+    }
+
+    .bg-success {
+        background-color: #10b981 !important;
+    }
+
+    .bg-danger {
+        background-color: #ef4444 !important;
+    }
+
+    .bg-secondary {
+        background-color: #6b7280 !important;
+    }
+
+    @@media (max-width: 768px) {
+        .table td, .table th {
+            font-size: 0.75rem;
+            padding: 0.5rem;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+        }
+    }
+</style>

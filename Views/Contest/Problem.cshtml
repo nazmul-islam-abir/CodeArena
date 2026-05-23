@@ -1,0 +1,174 @@
+﻿<!-- Views/Contest/Problem.cshtml - Complete fixed version -->
+@model MyMvcApp.Models.Problem
+@{
+    ViewData["Title"] = Model.Title;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var contest = ViewBag.Contest as MyMvcApp.Models.Contest;
+    var letter = ViewBag.Letter as string;
+    var isContestActive = ViewBag.IsContestActive == true;
+    var isPractice = ViewBag.IsPractice == true;
+}
+
+<div class="container py-4">
+    <div class="mb-4">
+        <a href="/Contest/@contest?.Id" class="btn btn-outline-theme">
+            <i class="bi bi-arrow-left me-2"></i>Back to Contest
+        </a>
+    </div>
+
+    <!-- Contest Info Bar -->
+    <div class="alert alert-info mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <strong><i class="bi bi-trophy me-2"></i>@contest?.Title</strong>
+                <span class="badge bg-primary mx-2">Problem @letter</span>
+                <span class="badge bg-warning">@ViewBag.Points points</span>
+            </div>
+            <div>
+                @if (isContestActive)
+                {
+                    <span class="text-success"><i class="bi bi-play-circle-fill me-1"></i> Contest Active</span>
+                }
+                else if (isPractice)
+                {
+                    <span class="text-info"><i class="bi bi-book me-1"></i> Practice Mode</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Problem Content -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h1 class="fs-2 fw-bold mb-3">@letter. @Model.Title</h1>
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        <span class="badge-custom"><i class="bi bi-clock"></i> Time Limit: @Model.TimeLimit s</span>
+                        <span class="badge-custom"><i class="bi bi-memory"></i> Memory: @(Model.MemoryLimit / 1024) MB</span>
+                        <span class="badge-custom"><i class="bi bi-star-fill text-warning"></i> Points: @ViewBag.Points</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5><i class="bi bi-file-text me-2 text-primary"></i>Description</h5>
+                        <div class="p-3 bg-body rounded-3">@Html.Raw(Model.Description?.Replace("\n", "<br/>"))</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5><i class="bi bi-arrow-right-circle me-2 text-primary"></i>Input Format</h5>
+                        <div class="p-3 bg-body rounded-3">@Html.Raw(Model.InputFormat?.Replace("\n", "<br/>"))</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5><i class="bi bi-arrow-left-circle me-2 text-primary"></i>Output Format</h5>
+                        <div class="p-3 bg-body rounded-3">@Html.Raw(Model.OutputFormat?.Replace("\n", "<br/>"))</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5><i class="bi bi-exclamation-triangle me-2 text-primary"></i>Constraints</h5>
+                        <div class="p-3 bg-body rounded-3">@Html.Raw(Model.Constraints?.Replace("\n", "<br/>"))</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5><i class="bi bi-file-code me-2 text-primary"></i>Sample Tests</h5>
+                        <div class="sample-grid">
+                            <div class="sample-box">
+                                <div class="sample-title">Sample Input</div>
+                                <div class="sample-content"><pre>@Model.SampleInput</pre></div>
+                            </div>
+                            <div class="sample-box">
+                                <div class="sample-title">Sample Output</div>
+                                <div class="sample-content"><pre>@Model.SampleOutput</pre></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 100px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-code-slash me-2"></i>Submit Solution</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-secondary">
+                        @if (isContestActive)
+                        {
+                            @: <i class="bi bi-info-circle me-1"></i> Your submission will be judged against hidden test cases.
+                        }
+                        else if (isPractice)
+                        {
+                            @: <i class="bi bi-info-circle me-1"></i> Practice mode - use this to learn and improve.
+                        }
+                    </p>
+                    <a href="/Compiler?problemId=@Model.Id&contestId=@contest?.Id" class="btn btn-primary w-100 py-3">
+                        <i class="bi bi-play-fill me-2"></i>Start Coding
+                    </a>
+                    <hr />
+                    <div class="text-center">
+                        <small class="text-secondary">
+                            <i class="bi bi-check-circle text-success"></i> Accepted solutions earn points<br />
+                            <i class="bi bi-exclamation-triangle text-warning"></i> Wrong submissions incur penalty
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .sample-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .sample-box {
+        background: var(--bg-body);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .sample-title {
+        padding: 10px 16px;
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--border-light);
+        font-weight: 600;
+    }
+
+    .sample-content {
+        padding: 16px;
+    }
+
+        .sample-content pre {
+            margin: 0;
+            background: transparent;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+    .sticky-top {
+        z-index: 1;
+    }
+
+    .badge-custom {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background-color: var(--bg-body);
+        border: 1px solid var(--border-light);
+        border-radius: 30px;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+    }
+
+    @@media (max-width: 768px) {
+        .sample-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
