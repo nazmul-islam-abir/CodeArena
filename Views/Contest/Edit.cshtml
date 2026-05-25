@@ -1,81 +1,649 @@
-@model MyMvcApp.Models.Contest
+@* Views/Contest/Edit.cshtml – Admin contest editor (works during live contests) *@
+@model MyMvcApp.Models.ContestViewModel
 @{
-    ViewData["Title"] = "Edit Contest";
+    ViewData["Title"] = $"Edit – {Model.Contest.Title}";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var now       = DateTime.UtcNow;
+    var isActive  = now >= Model.Contest.StartTime && now <= Model.Contest.EndTime;
+    var isEnded   = now > Model.Contest.EndTime;
+    var isUpcoming = now < Model.Contest.StartTime;
+
+    var currentProblemIds = Model.ProblemIdsString;
+
+    // Parse existing duration for pre-selecting hours/minutes dropdowns
+    int editHours = 2, editMins = 0;
+    var durStr = Model.Contest.Duration ?? "";
+    var hMatch = System.Text.RegularExpressions.Regex.Match(durStr, @"(\d+)\s*hour");
+    var mMatch = System.Text.RegularExpressions.Regex.Match(durStr, @"(\d+)\s*minute");
+    if (hMatch.Success) { editHours = int.Parse(hMatch.Groups[1].Value); }
+    if (mMatch.Success) { editMins = int.Parse(mMatch.Groups[1].Value); }
 }
 
 <div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card p-4">
-                <h3 class="fw-bold mb-4"><i class="bi bi-pencil-square me-2 text-primary"></i>Edit Contest</h3>
-                
-                <form method="post" action="/Contest/Edit/@Model.Id">
-                    @Html.AntiForgeryToken()
-                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                    <input type="hidden" name="Id" value="@Model.Id" />
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Contest Title</label>
-                        <input type="text" class="form-control" name="Title" value="@Model.Title" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" name="Description" rows="4" required>@Model.Description</textarea>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Organizer</label>
-                        <input type="text" class="form-control" name="Organizer" value="@Model.Organizer" required>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Start Date & Time</label>
-                            <input type="datetime-local" class="form-control" name="StartTime" value="@Model.StartTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")" required>
+
+    @* ── Breadcrumb ── *@
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Contest" class="text-decoration-none">Contests</a></li>
+            <li class="breadcrumb-item"><a href="/Contest/@Model.Contest.Id" class="text-decoration-none">@Model.Contest.Title</a></li>
+            <li class="breadcrumb-item active">Edit</li>
+        </ol>
+    </nav>
+
+    @* ── Live contest warning banner ── *@
+    @if (isActive)
+    {
+        <div class="alert alert-warning d-flex align-items-start gap-3 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-4 mt-1 flex-shrink-0"></i>
+            <div>
+                <strong>Contest is currently LIVE.</strong>
+                Changes to the title, description, organizer, rules, and problem set take effect immediately.
+                <br>The <em>Start Time</em> and <em>Duration</em> fields are locked to prevent disrupting participants —
+                use the <strong>End Time Override</strong> if you need to extend the contest.
+            </div>
+        </div>
+    }
+
+    <div class="row g-4">
+
+        @* ── Left Column: Contest Settings ── *@
+        <div class="col-lg-7">
+            <div class="edit-card">
+                <div class="edit-card-header">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-pencil-square me-2 text-primary"></i>Contest Settings
+                    </h5>
+                    @{
+                        string statusClass = isActive ? "bg-success" : (isUpcoming ? "bg-warning text-dark" : "bg-secondary");
+                        string statusText  = isActive ? "Live" : (isUpcoming ? "Upcoming" : "Ended");
+                    }
+                    <span class="badge @statusClass px-3 py-2">@statusText</span>
+                </div>
+
+                <div class="edit-card-body">
+                    <form method="post" action="/Contest/Edit/@Model.Contest.Id" id="editForm">
+                        @Html.AntiForgeryToken()
+
+                        @* Hidden fields *@
+                        <input type="hidden" name="Contest.Id" value="@Model.Contest.Id" />
+                        <input type="hidden" name="Contest.IsActive" value="@Model.Contest.IsActive.ToString().ToLower()" />
+                        <input type="hidden" name="Contest.IsFrozen" value="@Model.Contest.IsFrozen.ToString().ToLower()" />
+                        <input type="hidden" name="Contest.ContestLink" value="@Model.Contest.ContestLink" />
+                        <input type="hidden" name="Contest.CreatedAt" value="@Model.Contest.CreatedAt.ToString("o")" />
+                        <input type="hidden" name="Contest.ApprovalStatus" value="@Model.Contest.ApprovalStatus" />
+
+                        @* Validation summary *@
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
+
+                        @* Title *@
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Contest Title <span class="text-danger">*</span></label>
+                            <input asp-for="Contest.Title" class="form-control" required placeholder="e.g. Weekly Contest #12" />
+                            <span asp-validation-for="Contest.Title" class="text-danger small"></span>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Duration (hours)</label>
-                            <select class="form-select" name="Duration">
-                                <option value="1 hour" selected="@(Model.Duration == "1 hour")">1 hour</option>
-                                <option value="2 hours" selected="@(Model.Duration == "2 hours")">2 hours</option>
-                                <option value="3 hours" selected="@(Model.Duration == "3 hours")">3 hours</option>
-                                <option value="4 hours" selected="@(Model.Duration == "4 hours")">4 hours</option>
-                                <option value="24 hours" selected="@(Model.Duration == "24 hours")">24 hours</option>
-                            </select>
+
+                        @* Description *@
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
+                            <textarea asp-for="Contest.Description" class="form-control" rows="4" required placeholder="Describe the contest…"></textarea>
+                            <span asp-validation-for="Contest.Description" class="text-danger small"></span>
                         </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Difficulty</label>
-                            <select class="form-select" name="Difficulty">
-                                <option selected="@(Model.Difficulty == "Easy")">Easy</option>
-                                <option selected="@(Model.Difficulty == "Medium")">Medium</option>
-                                <option selected="@(Model.Difficulty == "Hard")">Hard</option>
-                                <option selected="@(Model.Difficulty == "Mixed")">Mixed</option>
-                            </select>
+
+                        @* Organizer *@
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Organizer</label>
+                            <input asp-for="Contest.Organizer" class="form-control" placeholder="CodeArena" />
+                        </div>
+
+                        @* Start Time & Duration ── locked when live *@
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    Start Date &amp; Time <span class="text-danger">*</span>
+                                    @if (isActive) { <i class="bi bi-lock-fill ms-1 text-warning" title="Locked during live contest"></i> }
+                                </label>
+                                @if (isActive)
+                                {
+                                    @* Keep original value silently, show read-only display *@
+                                    <input type="hidden" asp-for="Contest.StartTime" />
+                                    <input type="datetime-local" class="form-control" disabled
+                                           value="@Model.Contest.StartTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")" />
+                                }
+                                else
+                                {
+                                    <input asp-for="Contest.StartTime" type="datetime-local" class="form-control" required
+                                           value="@Model.Contest.StartTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")" />
+                                }
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">
+                                    Duration (Hours)
+                                    @if (isActive) { <i class="bi bi-lock-fill ms-1 text-warning" title="Locked during live contest"></i> }
+                                </label>
+                                @if (isActive)
+                                {
+                                    <input type="hidden" asp-for="Contest.Duration" />
+                                    <input type="text" class="form-control" disabled value="@Model.Contest.Duration" />
+                                }
+                                else
+                                {
+                                    <select id="editDurationHours" class="form-select">
+                                        @for (int h = 0; h <= 24; h++)
+                                        {
+                                            if (h == editHours)
+                                            {
+                                                <option value="@h" selected>@h hrs</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@h">@h hrs</option>
+                                            }
+                                        }
+                                    </select>
+                                }
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">
+                                    Duration (Minutes)
+                                    @if (isActive) { <i class="bi bi-lock-fill ms-1 text-warning" title="Locked during live contest"></i> }
+                                </label>
+                                @if (isActive)
+                                {
+                                    <span class="form-control" style="background: var(--input-bg); opacity: 0.7;">—</span>
+                                }
+                                else
+                                {
+                                    <select id="editDurationMinutes" class="form-select">
+                                        @for (int m = 0; m <= 55; m += 5)
+                                        {
+                                            if (m == editMins)
+                                            {
+                                                <option value="@m" selected>@m mins</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@m">@m mins</option>
+                                            }
+                                        }
+                                    </select>
+                                    <input type="hidden" asp-for="Contest.Duration" id="editDurationHidden" value="@Model.Contest.Duration" />
+                                }
+                            </div>
+                        </div>
+
+                        @* Live-only: End Time Override *@
+                        @if (isActive)
+                        {
+                            <div class="mb-4 p-3 border border-warning rounded-3" style="background: rgba(251,191,36,0.07);">
+                                <label class="form-label fw-semibold text-warning-emphasis">
+                                    <i class="bi bi-alarm me-1"></i>End Time Override
+                                    <span class="badge bg-warning text-dark ms-2 small">Live only</span>
+                                </label>
+                                <input type="datetime-local" name="EndTimeOverride" class="form-control"
+                                       value="@Model.Contest.EndTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")" />
+                                <div class="form-text">Change when the contest ends. Leave as-is to keep current end time.</div>
+                            </div>
+                        }
+
+
+
+                        @* Visibility toggles *@
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="toggle-box">
+                                    <div class="form-check form-switch">
+                                        <input asp-for="Contest.ShowRankingImmediately" class="form-check-input" type="checkbox" id="showRankingSwitch" />
+                                        <label class="form-check-label fw-semibold" for="showRankingSwitch">Show Ranking to Participants</label>
+                                    </div>
+                                    <div class="form-text mt-1">Participants can see the leaderboard in real time.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="toggle-box">
+                                    <div class="form-check form-switch">
+                                        <input asp-for="Contest.IsPrivate" class="form-check-input" type="checkbox" id="isPrivateSwitch" />
+                                        <label class="form-check-label fw-semibold" for="isPrivateSwitch">Private Contest</label>
+                                    </div>
+                                    <div class="form-text mt-1">Requires a password to register.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* Password (shown only when private) *@
+                        <div class="mb-4" id="passwordField" style="display: @(Model.Contest.IsPrivate ? "block" : "none");">
+                            <label class="form-label fw-semibold">Contest Password</label>
+                            <input asp-for="Contest.Password" type="text" class="form-control" placeholder="Leave blank to keep current password" />
+                            <div class="form-text">Only required if you want to change the password.</div>
+                        </div>
+
+                        @* Rules *@
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Rules <span class="text-secondary small fw-normal">(optional)</span></label>
+                            <textarea asp-for="Contest.Rules" class="form-control" rows="3" placeholder="Penalty rules, allowed languages, etc."></textarea>
+                        </div>
+
+                        @* Hidden problem IDs (updated by the picker on the right) *@
+                        <input type="hidden" name="ProblemIdsString" id="problemIdsHidden" value="@currentProblemIds" />
+
+                        @* Submit *@
+                        <div class="d-flex gap-3 pt-2">
+                            <button type="submit" class="btn btn-primary px-5 py-2 fw-semibold">
+                                <i class="bi bi-save me-2"></i>Save Changes
+                            </button>
+                            <a href="/Contest/@Model.Contest.Id" class="btn btn-outline-secondary px-4 py-2">
+                                <i class="bi bi-x-lg me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        @* ── Right Column: Problem Picker ── *@
+        <div class="col-lg-5">
+            <div class="edit-card h-100">
+                <div class="edit-card-header">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-puzzle-fill me-2 text-primary"></i>Problems
+                    </h5>
+                    <span class="badge bg-primary" id="selectedCount">0 selected</span>
+                </div>
+                <div class="edit-card-body">
+
+                    @if (isActive)
+                    {
+                        <div class="alert alert-info py-2 small mb-3">
+                            <i class="bi bi-info-circle me-1"></i>
+                            You can add or remove problems during a live contest. Participants may see the change immediately.
+                        </div>
+                    }
+
+                    @* Search filter *@
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="problemSearch" placeholder="Search problems by title or ID…" />
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Problem IDs (comma separated)</label>
-                        <input type="text" class="form-control" name="problemIds" value="@ViewBag.ProblemIds" placeholder="e.g. 1, 2, 5" required>
-                        @Html.ValidationMessage("problemIds", new { @class = "text-danger" })
-                        <div class="form-text">Update the IDs of the problems you want to include in this contest.</div>
+                    @* Problem list *@
+                    <div id="problemList" class="problem-list">
+                        @{
+                            var selectedIds = string.IsNullOrEmpty(currentProblemIds)
+                                ? new HashSet<int>()
+                                : currentProblemIds.Split(',')
+                                    .Select(x => int.TryParse(x.Trim(), out int v) ? v : 0)
+                                    .Where(x => x > 0)
+                                    .ToHashSet();
+                        }
+                        @foreach (var problem in Model.AvailableProblems)
+                        {
+                            var isChecked = selectedIds.Contains(problem.Id);
+                            <div class="problem-item @(isChecked ? "selected" : "")"
+                                 data-id="@problem.Id"
+                                 data-title="@problem.Title.ToLower()"
+                                 onclick="toggleProblem(this)">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="problem-check @(isChecked ? "checked" : "")">
+                                        <i class="bi bi-check2"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-medium">#@problem.Id – @problem.Title</div>
+                                        <div class="d-flex gap-2 mt-1">
+                                            <span class="badge-pill @(problem.Difficulty == 1 ? "pill-easy" : problem.Difficulty == 2 ? "pill-medium" : "pill-hard")">
+                                                @problem.DifficultyText
+                                            </span>
+                                            <span class="badge-pill pill-pts">@problem.Points pts</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!Model.AvailableProblems.Any())
+                        {
+                            <div class="text-center py-4 text-secondary">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>No active problems available.
+                            </div>
+                        }
                     </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary py-2 flex-grow-1">
-                            <i class="bi bi-save me-2"></i>Save Changes
-                        </button>
-                        <a href="/Contest/Details/@Model.Id" class="btn btn-outline-secondary py-2">
-                            Cancel
-                        </a>
+
+                    <div class="mt-3 pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-secondary">Selected problems (in order):</small>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAll()">Clear all</button>
+                        </div>
+                        <div id="selectedPreview" class="selected-preview"></div>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
+
     </div>
 </div>
+
+<style>
+    /* ── Cards ── */
+    .edit-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .edit-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 24px;
+        border-bottom: 1px solid var(--border-light);
+        background-color: var(--bg-body);
+    }
+
+    .edit-card-body {
+        padding: 24px;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    /* ── Form controls ── */
+    .form-control,
+    .form-select {
+        background-color: var(--bg-card);
+        color: var(--text-primary);
+        border-color: var(--border-light);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        background-color: var(--bg-card);
+        color: var(--text-primary);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    .form-control:disabled,
+    .form-select:disabled {
+        background-color: var(--bg-body);
+        opacity: 0.65;
+        cursor: not-allowed;
+    }
+
+    .form-label {
+        color: var(--text-primary);
+        margin-bottom: 6px;
+    }
+
+    .form-text {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+    }
+
+    /* ── Toggle box ── */
+    .toggle-box {
+        background-color: var(--bg-body);
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 14px 16px;
+        height: 100%;
+    }
+
+    /* ── Problem picker ── */
+    .problem-list {
+        max-height: 420px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    .problem-list::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .problem-list::-webkit-scrollbar-track {
+        background: var(--bg-body);
+        border-radius: 10px;
+    }
+
+    .problem-list::-webkit-scrollbar-thumb {
+        background: var(--border-light);
+        border-radius: 10px;
+    }
+
+    .problem-item {
+        display: block;
+        padding: 12px 14px;
+        border: 1.5px solid var(--border-light);
+        border-radius: 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        user-select: none;
+    }
+
+    .problem-item:hover {
+        border-color: var(--primary);
+        background-color: var(--primary-light);
+        transform: translateX(2px);
+    }
+
+    .problem-item.selected {
+        border-color: var(--primary);
+        background-color: var(--primary-light);
+    }
+
+    .problem-check {
+        width: 22px;
+        height: 22px;
+        border: 2px solid var(--border-light);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: all 0.15s ease;
+        color: transparent;
+        font-size: 0.85rem;
+    }
+
+    .problem-check.checked {
+        background-color: var(--primary);
+        border-color: var(--primary);
+        color: white;
+    }
+
+    /* ── Pills ── */
+    .badge-pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 500;
+    }
+
+    .pill-easy   { background-color: #dcfce7; color: #15803d; }
+    .pill-medium { background-color: #fef9c3; color: #854d0e; }
+    .pill-hard   { background-color: #fee2e2; color: #b91c1c; }
+    .pill-pts    { background-color: var(--primary-light); color: var(--primary); }
+
+    body.dark .pill-easy   { background-color: #14532d; color: #86efac; }
+    body.dark .pill-medium { background-color: #422006; color: #fde68a; }
+    body.dark .pill-hard   { background-color: #450a0a; color: #fca5a5; }
+
+    /* ── Selected preview ── */
+    .selected-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-height: 32px;
+    }
+
+    .preview-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background-color: var(--primary);
+        color: white;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.15s;
+    }
+
+    .preview-tag:hover {
+        background-color: #0369a1;
+    }
+
+    .preview-tag .remove-tag {
+        font-size: 0.7rem;
+        opacity: 0.8;
+    }
+
+    /* ── Btn primary ── */
+    .btn-primary {
+        background-color: var(--primary);
+        border-color: var(--primary);
+        font-weight: 600;
+        transition: all 0.15s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: #0369a1;
+        border-color: #0369a1;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+
+    /* ── Breadcrumb ── */
+    .breadcrumb-item a { color: var(--primary); }
+    .breadcrumb-item.active { color: var(--text-secondary); }
+</style>
+
+<script>
+    // ── Initialise selected set from hidden input ──
+    const hiddenInput = document.getElementById('problemIdsHidden');
+    let selectedOrder = hiddenInput.value
+        ? hiddenInput.value.split(',').map(x => x.trim()).filter(x => x).map(Number)
+        : [];
+
+    function syncHidden() {
+        hiddenInput.value = selectedOrder.join(',');
+    }
+
+    function updateBadge() {
+        document.getElementById('selectedCount').textContent = selectedOrder.length + ' selected';
+    }
+
+    function renderPreview() {
+        const preview = document.getElementById('selectedPreview');
+        preview.innerHTML = '';
+
+        selectedOrder.forEach((id, idx) => {
+            const item = document.querySelector(`.problem-item[data-id="${id}"]`);
+            const title = item ? item.querySelector('.fw-medium').textContent.trim() : `#${id}`;
+            const tag = document.createElement('div');
+            tag.className = 'preview-tag';
+            tag.innerHTML = `<span>${String.fromCharCode(65 + idx)}: ${title}</span><span class="remove-tag" onclick="removeProblem(${id},event)">✕</span>`;
+            preview.appendChild(tag);
+        });
+
+        if (selectedOrder.length === 0) {
+            preview.innerHTML = '<small class="text-secondary">No problems selected</small>';
+        }
+    }
+
+    function toggleProblem(el) {
+        const id = parseInt(el.dataset.id);
+        const check = el.querySelector('.problem-check');
+        const idx = selectedOrder.indexOf(id);
+
+        if (idx === -1) {
+            selectedOrder.push(id);
+            el.classList.add('selected');
+            check.classList.add('checked');
+        } else {
+            selectedOrder.splice(idx, 1);
+            el.classList.remove('selected');
+            check.classList.remove('checked');
+        }
+
+        syncHidden();
+        updateBadge();
+        renderPreview();
+    }
+
+    function removeProblem(id, event) {
+        event.stopPropagation();
+        const idx = selectedOrder.indexOf(id);
+        if (idx !== -1) {
+            selectedOrder.splice(idx, 1);
+            const el = document.querySelector(`.problem-item[data-id="${id}"]`);
+            if (el) {
+                el.classList.remove('selected');
+                el.querySelector('.problem-check').classList.remove('checked');
+            }
+            syncHidden();
+            updateBadge();
+            renderPreview();
+        }
+    }
+
+    function clearAll() {
+        selectedOrder = [];
+        document.querySelectorAll('.problem-item.selected').forEach(el => {
+            el.classList.remove('selected');
+            el.querySelector('.problem-check').classList.remove('checked');
+        });
+        syncHidden();
+        updateBadge();
+        renderPreview();
+    }
+
+    // ── Search filter ──
+    document.getElementById('problemSearch').addEventListener('input', function () {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll('.problem-item').forEach(el => {
+            const title = el.dataset.title;
+            const id = el.dataset.id;
+            el.style.display = (title.includes(q) || id.includes(q)) ? 'block' : 'none';
+        });
+    });
+
+    // ── Private contest password toggle ──
+    document.getElementById('isPrivateSwitch').addEventListener('change', function () {
+        document.getElementById('passwordField').style.display = this.checked ? 'block' : 'none';
+    });
+
+    // ── Form validation: must have at least 1 problem ──
+    document.getElementById('editForm').addEventListener('submit', function (e) {
+        if (selectedOrder.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one problem before saving.');
+        }
+    });
+
+    // ── Duration hours+minutes sync ──
+    var editHoursEl = document.getElementById('editDurationHours');
+    var editMinsEl = document.getElementById('editDurationMinutes');
+    var editDurHidden = document.getElementById('editDurationHidden');
+    if (editHoursEl && editMinsEl && editDurHidden) {
+        function syncEditDuration() {
+            var h = parseInt(editHoursEl.value);
+            var m = parseInt(editMinsEl.value);
+            if (h === 0 && m === 0) { m = 5; editMinsEl.value = '5'; }
+            editDurHidden.value = h + ' hours ' + m + ' minutes';
+        }
+        editHoursEl.addEventListener('change', syncEditDuration);
+        editMinsEl.addEventListener('change', syncEditDuration);
+        syncEditDuration();
+    }
+
+    // ── Init ──
+    updateBadge();
+    renderPreview();
+</script>

@@ -1,4 +1,5 @@
-﻿@{
+@model MyMvcApp.Models.HomeViewModel
+@{
     ViewData["Title"] = "Home Page";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
@@ -6,106 +7,126 @@
 <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
-<section id="home" class="pt-5 pb-4">
+<section id="home" class="hero-section pt-5 pb-4">
     <div class="container py-5">
         <div class="row align-items-center g-5">
             <div class="col-lg-6" data-aos="fade-right">
                 @if (Context.Session.GetString("UserId") != null)
                 {
-                    <span class="badge-feature mb-3 d-inline-block">
+                    <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 mb-4 d-inline-block shadow-sm">
                         <i class="bi bi-person-circle me-1"></i> Welcome back, @Context.Session.GetString("UserFullName")!
                     </span>
                 }
                 else
                 {
-                    <span class="badge-feature mb-3 d-inline-block"><i class="bi bi-cpu me-1"></i> v2.0 · Launching soon</span>
+                    <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 mb-4 d-inline-block shadow-sm">
+                        <i class="bi bi-rocket-takeoff me-1"></i> Version 2.0 is Live
+                    </span>
                 }
-                <h1 class="display-4 fw-bold mb-4">Where code meets <span class="text-gradient">challenge</span></h1>
-                <p class="lead mb-4 text-secondary">Online programming judge with real contest system, automated evaluation, hidden test cases & live leaderboard.</p>
-                <div class="d-flex flex-wrap gap-3 mb-4">
-                    <div><i class="bi bi-check-circle-fill text-primary me-1"></i> C++ supported</div>
-                    <div><i class="bi bi-check-circle-fill text-primary me-1"></i> TLE / MLE checks</div>
-                    <div><i class="bi bi-check-circle-fill text-primary me-1"></i> Contest timer</div>
+                <h1 class="display-3 fw-bold mb-4 tracking-tight" style="line-height: 1.2;">
+                    Master Algorithms.<br />
+                    <span class="text-gradient">Elevate Your Code.</span>
+                </h1>
+                <p class="lead mb-4 text-secondary">
+                    Join an elite community of developers. Solve challenging problems, compete in real-time contests, and climb the global leaderboard.
+                </p>
+                <div class="d-flex flex-wrap gap-3 mb-5">
+                    <div class="d-flex align-items-center"><i class="bi bi-lightning-charge-fill text-warning me-2 fs-5"></i> <span>Instant Evaluation</span></div>
+                    <div class="d-flex align-items-center"><i class="bi bi-shield-lock-fill text-success me-2 fs-5"></i> <span>Hidden Test Cases</span></div>
+                    <div class="d-flex align-items-center"><i class="bi bi-trophy-fill text-primary me-2 fs-5"></i> <span>Dynamic ELO Rating</span></div>
                 </div>
                 <div class="d-flex gap-3">
-                    <a href="#features" class="btn btn-primary btn-lg px-5 py-3 rounded-pill">Explore <i class="bi bi-arrow-right-short"></i></a>
-                    <a href="/Compiler" class="btn btn-outline-theme btn-lg px-5 py-3 rounded-pill">Try Compiler</a>
+                    <a href="/Problem" class="btn btn-primary btn-lg px-5 py-3 rounded-pill fw-semibold shadow-sm" style="background: linear-gradient(135deg, #6366f1, #4f46e5); border: none;">Start Solving</a>
+                    <a href="/Compiler" class="btn btn-outline-secondary btn-lg px-5 py-3 rounded-pill fw-semibold bg-white bg-opacity-50">Try Compiler</a>
                 </div>
             </div>
             <div class="col-lg-6" data-aos="fade-left">
-                <div class="card p-4 border-0">
-                    <img src="https://placehold.co/600x400/0f172a/ffffff?text=Live+Editor+Preview" class="rounded-4 img-fluid" alt="editor preview">
-                    <div class="d-flex justify-content-between mt-3 text-muted small">
-                        <span><i class="bi bi-filetype-cpp me-1"></i> main.cpp</span>
-                        <span><i class="bi bi-play-circle-fill text-success"></i> Run</span>
+                <div class="glass-card p-4 overflow-hidden position-relative">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary border-opacity-25 pb-3">
+                        <div class="d-flex gap-2">
+                            <span class="rounded-circle bg-danger" style="width:12px;height:12px;"></span>
+                            <span class="rounded-circle bg-warning" style="width:12px;height:12px;"></span>
+                            <span class="rounded-circle bg-success" style="width:12px;height:12px;"></span>
+                        </div>
+                        <span class="text-secondary small fw-medium"><i class="bi bi-filetype-cpp me-1"></i> solution.cpp</span>
                     </div>
+                    <pre class="mb-0" style="color: #e2e8f0; font-family: 'Fira Code', monospace; font-size: 0.9rem;"><code class="language-cpp"><span style="color: #c678dd;">#include</span> <span style="color: #98c379;">&lt;iostream&gt;</span>
+<span style="color: #c678dd;">using</span> <span style="color: #e5c07b;">namespace</span> <span style="color: #e06c75;">std</span>;
+
+<span style="color: #c678dd;">int</span> <span style="color: #61afef;">main</span>() {
+    <span style="color: #c678dd;">int</span> a, b;
+    cin >> a >> b;
+    <span style="color: #5c6370; font-style: italic;">// The core logic goes here</span>
+    cout << a + b << endl;
+    <span style="color: #c678dd;">return</span> <span style="color: #d19a66;">0</span>;
+}</code></pre>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<section class="py-4">
+<section class="py-5 position-relative z-1">
     <div class="container">
-        <div class="row g-4">
+        <div class="row g-4 justify-content-center">
             <div class="col-md-4" data-aos="zoom-in" data-aos-delay="100">
-                <div class="card p-4 h-100 border-0">
-                    <i class="bi bi-people-fill fs-1 text-primary mb-3"></i>
-                    <h4>200+ active coders</h4>
-                    <p class="text-secondary">University-level practice platform with weekly internal contests.</p>
+                <div class="glass-card p-5 text-center h-100">
+                    <div class="stat-number text-gradient">@Model.TotalActiveUsers+</div>
+                    <h5 class="fw-bold mb-2">Active Coders</h5>
+                    <p class="text-secondary mb-0 small">Join a growing community of passionate developers.</p>
                 </div>
             </div>
             <div class="col-md-4" data-aos="zoom-in" data-aos-delay="200">
-                <div class="card p-4 h-100 border-0">
-                    <i class="bi bi-trophy-fill fs-1 text-warning mb-3"></i>
-                    <h4>Real-time ELO</h4>
-                    <p class="text-secondary">Dynamic ranking based on problem difficulty & contest performance.</p>
+                <div class="glass-card p-5 text-center h-100">
+                    <div class="stat-number text-gradient">Live</div>
+                    <h5 class="fw-bold mb-2">Contest System</h5>
+                    <p class="text-secondary mb-0 small">Compete in real-time with dynamic leaderboards.</p>
                 </div>
             </div>
             <div class="col-md-4" data-aos="zoom-in" data-aos-delay="300">
-                <div class="card p-4 h-100 border-0">
-                    <i class="bi bi-shield-lock-fill fs-1 text-success mb-3"></i>
-                    <h4>Hidden test cases</h4>
-                    <p class="text-secondary">Anti-plagiarism & secure evaluation against brute force.</p>
+                <div class="glass-card p-5 text-center h-100">
+                    <div class="stat-number text-gradient">100%</div>
+                    <h5 class="fw-bold mb-2">Secure Evaluation</h5>
+                    <p class="text-secondary mb-0 small">Strict TLE/MLE checks with hidden test cases.</p>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<section id="features" class="py-5">
+<section id="features" class="py-5 mt-4">
     <div class="container">
-        <div class="text-center mb-5">
-            <span class="badge-feature">platform deep-dive</span>
-            <h2 class="display-5 fw-bold mt-3">Everything inside the arena</h2>
-            <p class="col-lg-7 mx-auto text-secondary">From admin monitoring to contest timers – built for students, teachers, and competitive programmers.</p>
+        <div class="text-center mb-5" data-aos="fade-up">
+            <span class="text-primary fw-bold text-uppercase tracking-wide small mb-2 d-block">Platform Ecosystem</span>
+            <h2 class="display-5 fw-bold mb-3">Everything you need to excel</h2>
+            <p class="col-lg-6 mx-auto text-secondary lead">Designed for students, educators, and competitive programming enthusiasts to seamlessly write, test, and analyze code.</p>
         </div>
         <div class="row g-4">
-            <div class="col-md-6 col-lg-4" data-aos="flip-left">
-                <div class="card p-4 h-100">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <i class="bi bi-person-badge fs-1" style="color: var(--primary);"></i>
-                        <h5 class="fw-bold mb-0">Role‑based access</h5>
+            <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="glass-card p-4 h-100 border-top-0 border-end-0 border-bottom-0 border-4" style="border-left-color: #6366f1;">
+                    <div class="feature-icon-wrapper text-primary">
+                        <i class="bi bi-clock-history"></i>
                     </div>
-                    <p class="text-secondary mb-0">Admin, user, and contestant roles. Admins manage problems, test cases, and approve contests.</p>
+                    <h4 class="fw-bold mb-3">Precision Limits</h4>
+                    <p class="text-secondary mb-0">Strict Time Limit (TLE) and Memory Limit (MLE) enforcement ensures optimal algorithmic efficiency.</p>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="100">
-                <div class="card p-4 h-100">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <i class="bi bi-bar-chart-steps fs-1 text-warning"></i>
-                        <h5 class="fw-bold mb-0">Live leaderboard</h5>
+            <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="glass-card p-4 h-100 border-top-0 border-end-0 border-bottom-0 border-4" style="border-left-color: #ec4899;">
+                    <div class="feature-icon-wrapper text-danger">
+                        <i class="bi bi-shield-check"></i>
                     </div>
-                    <p class="text-secondary mb-0">Points based on difficulty, tracks solved count, updates instantly during contests.</p>
+                    <h4 class="fw-bold mb-3">Robust Security</h4>
+                    <p class="text-secondary mb-0">Code is evaluated in isolated containers with hidden test suites to prevent malicious submissions.</p>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-4" data-aos="flip-left" data-aos-delay="200">
-                <div class="card p-4 h-100">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <i class="bi bi-clock-history fs-1 text-danger"></i>
-                        <h5 class="fw-bold mb-0">TLE / MLE check</h5>
+            <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="300">
+                <div class="glass-card p-4 h-100 border-top-0 border-end-0 border-bottom-0 border-4" style="border-left-color: #f59e0b;">
+                    <div class="feature-icon-wrapper text-warning">
+                        <i class="bi bi-bar-chart-fill"></i>
                     </div>
-                    <p class="text-secondary mb-0">Strict time & memory limits enforced using free compiler API.</p>
+                    <h4 class="fw-bold mb-3">Real-time Analytics</h4>
+                    <p class="text-secondary mb-0">Instant feedback on execution time, memory usage, and comprehensive verdict details.</p>
                 </div>
             </div>
         </div>
@@ -114,144 +135,130 @@
 
 <section class="py-5">
     <div class="container">
-        <div class="text-center mb-5">
-            <span class="badge-feature">practice makes perfect</span>
-            <h2 class="display-5 fw-bold mt-3">Featured Problems</h2>
-            <p class="col-lg-7 mx-auto text-secondary">Start with these popular problems and improve your coding skills.</p>
+        <div class="d-flex justify-content-between align-items-end mb-5" data-aos="fade-up">
+            <div>
+                <span class="text-primary fw-bold text-uppercase tracking-wide small mb-2 d-block">Curated Challenges</span>
+                <h2 class="display-5 fw-bold mb-0">Featured Problems</h2>
+            </div>
+            <a href="/Problem" class="btn btn-outline-primary rounded-pill d-none d-md-inline-flex px-4">View All <i class="bi bi-arrow-right ms-2"></i></a>
         </div>
+        
         <div class="row g-4">
-            <div class="col-md-4" data-aos="fade-up">
-                <div class="card p-4 h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="badge bg-success">Easy</span>
-                        <span class="text-warning">10 pts</span>
+            @if(Model.FeaturedProblems != null && Model.FeaturedProblems.Any())
+            {
+                int delay = 100;
+                foreach(var problem in Model.FeaturedProblems)
+                {
+                    <div class="col-md-4" data-aos="fade-up" data-aos-delay="@delay">
+                        <div class="glass-card p-4 h-100 d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                @{
+                                    string badgeClass = problem.Difficulty == 1 ? "bg-success" : (problem.Difficulty == 2 ? "bg-warning text-dark" : "bg-danger");
+                                }
+                                <span class="badge @badgeClass rounded-pill px-3 py-2 fw-semibold">@problem.DifficultyText</span>
+                                <span class="text-primary fw-bold"><i class="bi bi-star-fill text-warning me-1"></i> @problem.Points pts</span>
+                            </div>
+                            <h4 class="fw-bold mb-3">@problem.Title</h4>
+                            <p class="text-secondary small flex-grow-1">
+                                @(string.IsNullOrEmpty(problem.Description) ? "No description available." : 
+                                  (problem.Description.Length > 100 ? problem.Description.Substring(0, 100) + "..." : problem.Description))
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top border-secondary border-opacity-10">
+                                <span class="text-secondary small fw-medium"><i class="bi bi-check2-circle text-success fs-5 align-middle me-1"></i> @problem.SolvedCount Solved</span>
+                                <a href="/Problem/Solve/@problem.Id" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">Solve</a>
+                            </div>
+                        </div>
                     </div>
-                    <h5>Sum of Two Numbers</h5>
-                    <p class="text-secondary small">Calculate the sum of two integers. Basic input/output practice.</p>
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <span class="text-secondary"><i class="bi bi-check-circle-fill text-success me-1"></i> 245 solved</span>
-                        <a href="/Problem/Solve/1" class="btn btn-sm btn-outline-primary">Solve →</a>
-                    </div>
+                    delay += 100;
+                }
+            }
+            else
+            {
+                <div class="col-12 text-center py-5">
+                    <p class="text-secondary">No featured problems available at the moment.</p>
                 </div>
-            </div>
-            <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
-                <div class="card p-4 h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="badge bg-warning">Medium</span>
-                        <span class="text-warning">30 pts</span>
-                    </div>
-                    <h5>Factorial</h5>
-                    <p class="text-secondary small">Calculate factorial of a number. Practice loops and recursion.</p>
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <span class="text-secondary"><i class="bi bi-check-circle-fill text-success me-1"></i> 156 solved</span>
-                        <a href="/Problem/Solve/3" class="btn btn-sm btn-outline-primary">Solve →</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
-                <div class="card p-4 h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="badge bg-danger">Hard</span>
-                        <span class="text-warning">60 pts</span>
-                    </div>
-                    <h5>Binary Search</h5>
-                    <p class="text-secondary small">Implement binary search in a sorted array.</p>
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <span class="text-secondary"><i class="bi bi-check-circle-fill text-success me-1"></i> 76 solved</span>
-                        <a href="/Problem/Solve/9" class="btn btn-sm btn-outline-primary">Solve →</a>
-                    </div>
-                </div>
-            </div>
+            }
         </div>
-        <div class="text-center mt-5">
-            <a href="/Problem" class="btn btn-primary btn-lg px-5 py-3 rounded-pill">View All Problems <i class="bi bi-arrow-right"></i></a>
+        <div class="text-center mt-4 d-md-none">
+            <a href="/Problem" class="btn btn-outline-primary rounded-pill w-100">View All Problems</a>
         </div>
     </div>
 </section>
 
-<section class="py-5">
+<section id="ranking" class="py-5 position-relative">
     <div class="container">
-        <h3 class="fw-bold mb-4 text-center">How evaluation works <i class="bi bi-arrow-repeat ms-2"></i></h3>
-        <div class="swiper mySwiper">
-            <div class="swiper-wrapper">
-                <div class="swiper-slide"><div class="carousel-card p-4 bg-card border rounded-4"><i class="bi bi-file-earmark-code fs-2 text-primary"></i><h5 class="mt-2">1. User uploads code</h5><p class="text-secondary small">C++ source via online editor or file.</p></div></div>
-                <div class="swiper-slide"><div class="carousel-card p-4 bg-card border rounded-4"><i class="bi bi-incognito fs-2 text-warning"></i><h5 class="mt-2">2. Hidden test cases</h5><p class="text-secondary small">System runs against private I/O.</p></div></div>
-                <div class="swiper-slide"><div class="carousel-card p-4 bg-card border rounded-4"><i class="bi bi-stopwatch fs-2 text-danger"></i><h5 class="mt-2">3. TLE / MLE check</h5><p class="text-secondary small">Time & memory limits enforced.</p></div></div>
-                <div class="swiper-slide"><div class="carousel-card p-4 bg-card border rounded-4"><i class="bi bi-check2-circle fs-2 text-success"></i><h5 class="mt-2">4. Instant result</h5><p class="text-secondary small">Verdict shown immediately.</p></div></div>
-                <div class="swiper-slide"><div class="carousel-card p-4 bg-card border rounded-4"><i class="bi bi-trophy fs-2 text-warning"></i><h5 class="mt-2">Rank update</h5><p class="text-secondary small">Leaderboard points recalculated.</p></div></div>
-            </div>
-            <div class="swiper-pagination"></div>
-        </div>
-    </div>
-</section>
-
-<section id="ranking" class="py-5">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-5" data-aos="fade-right">
-                <span class="badge-feature">leaderboard</span>
-                <h2 class="display-6 fw-bold mt-2">Dynamic ranking & points</h2>
-                <p class="text-secondary">Points awarded based on problem difficulty. Live leaderboard tracks solved count.</p>
-                <ul class="list-unstyled">
-                    <li class="mb-2"><i class="bi bi-check-lg text-primary me-2"></i> Difficulty: Easy (10pt), Medium (30pt), Hard (60pt)</li>
-                    <li class="mb-2"><i class="bi bi-check-lg text-primary me-2"></i> Contest rating multiplier</li>
-                </ul>
-                <a href="/Ranking" class="btn btn-outline-theme mt-3">View Full Ranking <i class="bi bi-arrow-right"></i></a>
-            </div>
-            <div class="col-lg-7" data-aos="fade-left">
-                <div class="card p-4">
-                    <table class="table table-borderless align-middle">
-                        <thead><tr><th>#</th><th>Coder</th><th>Solved</th><th>Points</th><th>Rating</th></tr></thead>
-                        <tbody>
-                            <tr><td>🥇</td><td><i class="bi bi-person-circle me-2"></i> Minhaz</td><td>24</td><td><strong>1840</strong></td><td><span class="badge bg-warning text-dark">GM</span></td></tr>
-                            <tr><td>🥈</td><td><i class="bi bi-person-circle me-2"></i> Junayed</td><td>21</td><td>1620</td><td><span class="badge bg-info">Expert</span></td></tr>
-                            <tr><td>🥉</td><td><i class="bi bi-person-circle me-2"></i> Nazmul</td><td>19</td><td>1480</td><td><span class="badge bg-secondary">Specialist</span></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section id="compiler" class="py-5">
-    <div class="container">
-        <div class="card p-5 border-0" style="background: linear-gradient(145deg, var(--bg-card), var(--bg-body));">
-            <div class="row">
-                <div class="col-md-8">
-                    <span class="badge-feature"><i class="bi bi-cpu"></i> compiler API</span>
-                    <h2 class="fw-bold mt-2">Integrated with free online compiler API</h2>
-                    <p class="text-secondary col-lg-10">Currently supports C++ with hidden test case evaluation.</p>
-                    <div class="d-flex gap-3 mt-4 flex-wrap">
-                        <span class="badge-custom"><i class="bi bi-check-circle"></i> C++17</span>
-                        <span class="badge-custom"><i class="bi bi-clock"></i> Time limit 2s</span>
-                        <span class="badge-custom"><i class="bi bi-memory"></i> 256 MB</span>
-                    </div>
-                    <a href="/Compiler" class="btn btn-primary mt-4 px-5 py-2 rounded-pill">Try Compiler Now</a>
-                </div>
-                <div class="col-md-4 text-end">
-                    <i class="bi bi-terminal-plus" style="font-size: 5rem; color: var(--primary); opacity: 0.7;"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="py-5">
-    <div class="container">
-        <div class="card p-5 border-0" style="background: var(--primary-light);">
-            <div class="row">
-                <div class="col-lg-8">
-                    <h3 class="fw-bold" style="color: var(--text-primary);">🚀 Future implementations</h3>
-                    <div class="row mt-4 g-3">
-                        <div class="col-sm-6"><i class="bi bi-check-circle-fill text-primary me-2"></i> Practice mode</div>
-                        <div class="col-sm-6"><i class="bi bi-check-circle-fill text-primary me-2"></i> User rating (ELO)</div>
-                        <div class="col-sm-6"><i class="bi bi-check-circle-fill text-primary me-2"></i> Plagiarism detection</div>
-                        <div class="col-sm-6"><i class="bi bi-check-circle-fill text-primary me-2"></i> Editorial uploads</div>
+        <div class="glass-card overflow-hidden">
+            <div class="row g-0 align-items-stretch">
+                <div class="col-lg-5 p-5 d-flex flex-column justify-content-center" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(99, 102, 241, 0.15));" data-aos="fade-right">
+                    <span class="text-primary fw-bold text-uppercase tracking-wide small mb-3 d-block">Global Standing</span>
+                    <h2 class="display-5 fw-bold mb-4">Hall of Fame</h2>
+                    <p class="text-secondary mb-4 lead">
+                        Compete against the brightest minds. Points are awarded based on problem difficulty. Solve more to secure your spot at the top.
+                    </p>
+                    <ul class="list-unstyled mb-5">
+                        <li class="mb-3 d-flex align-items-center"><i class="bi bi-check-circle-fill text-success fs-4 me-3"></i> <span>Solve problems to gain points</span></li>
+                        <li class="mb-3 d-flex align-items-center"><i class="bi bi-check-circle-fill text-success fs-4 me-3"></i> <span>Compete in weekly contests</span></li>
+                        <li class="mb-0 d-flex align-items-center"><i class="bi bi-check-circle-fill text-success fs-4 me-3"></i> <span>Achieve Grandmaster rank</span></li>
+                    </ul>
+                    <div>
+                        <a href="/Ranking" class="btn btn-primary rounded-pill px-5 py-3 fw-semibold shadow-sm">View Full Leaderboard</a>
                     </div>
                 </div>
-                <div class="col-lg-4 text-end align-self-center">
-                    <i class="bi bi-stars" style="font-size: 4rem; opacity: 0.8; color: var(--primary);"></i>
+                <div class="col-lg-7 p-4 p-md-5" data-aos="fade-left">
+                    <div class="table-responsive">
+                        <table class="table table-borderless align-middle mb-0">
+                            <thead>
+                                <tr class="text-secondary border-bottom border-secondary border-opacity-25">
+                                    <th class="pb-3 fw-medium">Rank</th>
+                                    <th class="pb-3 fw-medium">Coder</th>
+                                    <th class="pb-3 fw-medium text-center">Solved</th>
+                                    <th class="pb-3 fw-medium text-end">Points</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if(Model.TopUsers != null && Model.TopUsers.Any())
+                                {
+                                    int rank = 1;
+                                    string[] medals = { "🥇", "🥈", "🥉" };
+                                    
+                                    foreach(var user in Model.TopUsers)
+                                    {
+                                        <tr class="border-bottom border-secondary border-opacity-10" style="transition: background-color 0.2s;">
+                                            <td class="py-4 fs-4">
+                                                @(rank <= 3 ? medals[rank - 1] : $"#{rank}")
+                                            </td>
+                                            <td class="py-4">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                                                        <span class="fw-bold fs-5">@user.FirstName.FirstOrDefault()</span>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-1 fw-bold">@user.FullName</h6>
+                                                        <span class="text-secondary small">@@@user.Username</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="py-4 text-center fw-medium fs-5">
+                                                @user.ProblemsSolved
+                                            </td>
+                                            <td class="py-4 text-end">
+                                                <span class="text-primary fw-bold fs-5">@user.TotalPoints</span>
+                                            </td>
+                                        </tr>
+                                        rank++;
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center py-5 text-secondary">
+                                            Leaderboard is currently empty.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -259,12 +266,12 @@
 </section>
 
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script>
-    AOS.init({ duration: 800, once: true });
-    new Swiper('.mySwiper', {
-    slidesPerView: 1, spaceBetween: 20, loop: true, autoplay: { delay: 2500, disableOnInteraction: false },
-    pagination: { el: '.swiper-pagination', clickable: true },
-    breakpoints: { 640: { slidesPerView: 2 }, 1024: { slidesPerView: 4 } }
+    document.addEventListener("DOMContentLoaded", function() {
+        AOS.init({ 
+            duration: 800, 
+            once: true,
+            offset: 50
+        });
     });
 </script>

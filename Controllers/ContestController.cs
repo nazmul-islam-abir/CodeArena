@@ -401,14 +401,19 @@ namespace MyMvcApp.Controllers
         [HttpGet("Create")]
         public async Task<IActionResult> Create()
         {
+            var now = DateTime.Now;
+            var minTime = now.AddMinutes(3);
+            int remainder = minTime.Minute % 5;
+            int add = remainder == 0 ? 0 : 5 - remainder;
+            var defaultTime = minTime.AddMinutes(add);
+            defaultTime = new DateTime(now.Year, defaultTime.Month, defaultTime.Day, defaultTime.Hour, defaultTime.Minute, 0);
+
             var model = new ContestViewModel
             {
                 Contest = new Contest
                 {
-                    StartTime = DateTime.Now.AddDays(7),
+                    StartTime = defaultTime,
                     Duration = "2 hours",
-                    Difficulty = "Mixed",
-                    MaxParticipants = 1000,
                     ShowRankingImmediately = true
                 },
                 AvailableProblems = await _context.Problems.Where(p => p.IsActive).OrderBy(p => p.Id).ToListAsync()
@@ -461,15 +466,30 @@ namespace MyMvcApp.Controllers
 
             var contest = model.Contest;
 
+            // Remove seconds and milliseconds, and force year to current year
+            var submittedStart = contest.StartTime;
+            submittedStart = new DateTime(DateTime.Now.Year, submittedStart.Month, submittedStart.Day, submittedStart.Hour, submittedStart.Minute, 0, submittedStart.Kind);
+
             // Ensure StartTime is in UTC
-            if (contest.StartTime.Kind == DateTimeKind.Local)
+            if (submittedStart.Kind == DateTimeKind.Local)
             {
-                contest.StartTime = contest.StartTime.ToUniversalTime();
+                submittedStart = submittedStart.ToUniversalTime();
             }
-            else if (contest.StartTime.Kind == DateTimeKind.Unspecified)
+            else if (submittedStart.Kind == DateTimeKind.Unspecified)
             {
-                contest.StartTime = DateTime.SpecifyKind(contest.StartTime, DateTimeKind.Local).ToUniversalTime();
+                submittedStart = DateTime.SpecifyKind(submittedStart, DateTimeKind.Local).ToUniversalTime();
             }
+
+            // Minimum start time (5 minutes from now)
+            var minStart = DateTime.UtcNow.AddMinutes(5);
+            minStart = new DateTime(minStart.Year, minStart.Month, minStart.Day, minStart.Hour, minStart.Minute, 0, DateTimeKind.Utc);
+
+            if (submittedStart < minStart)
+            {
+                submittedStart = minStart;
+            }
+
+            contest.StartTime = submittedStart;
 
             contest.CreatedAt = DateTime.UtcNow;
             contest.Status = "Upcoming";
@@ -478,16 +498,15 @@ namespace MyMvcApp.Controllers
             contest.ApprovalStatus = "Approved";
             contest.ContestLink = Guid.NewGuid().ToString().Substring(0, 8);
 
-            // Calculate end time
-            if (!string.IsNullOrEmpty(contest.Duration) && contest.Duration.Contains("hour"))
+            // Calculate end time from duration (format: "X hours Y minutes")
+            contest.EndTime = contest.StartTime.AddHours(2); // default fallback
+            if (!string.IsNullOrEmpty(contest.Duration))
             {
-                var hoursMatch = System.Text.RegularExpressions.Regex.Match(contest.Duration, @"\d+");
-                int hours = hoursMatch.Success ? int.Parse(hoursMatch.Value) : 2;
-                contest.EndTime = contest.StartTime.AddHours(hours);
-            }
-            else
-            {
-                contest.EndTime = contest.StartTime.AddHours(2);
+                int totalMinutes = ParseDurationToMinutes(contest.Duration);
+                if (totalMinutes > 0)
+                {
+                    contest.EndTime = contest.StartTime.AddMinutes(totalMinutes);
+                }
             }
 
             _context.Contests.Add(contest);
@@ -529,6 +548,9 @@ namespace MyMvcApp.Controllers
                 .OrderBy(cp => cp.Order)
                 .ToListAsync();
 
+            var now = DateTime.UtcNow;
+            ViewBag.IsLive = now >= contest.StartTime && now <= contest.EndTime;
+
             var model = new ContestViewModel
             {
                 Contest = contest,
@@ -544,25 +566,30 @@ namespace MyMvcApp.Controllers
         [Authorize(Roles = "Admin")]
         [HttpPost("Edit/{id:int}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, ContestViewModel model, string? problemIds)
+        public async Task<IActionResult> Edit(int id, ContestViewModel model, string? problemIds, string? EndTimeOverride)
         {
             var contest = await _context.Contests.FindAsync(id);
             if (contest == null || contest.IsDeleted) return NotFound();
 
-            // Parse problem IDs
-            var idList = new List<int>();
-            if (!string.IsNullOrEmpty(problemIds))
+            var now = DateTime.UtcNow;
+            bool isLive = now >= contest.StartTime && now <= contest.EndTime;
+
+            // ── Clear ModelState errors for fields that are intentionally locked during live contests ──
+            if (isLive)
             {
-                idList = problemIds.Split(',')
-                    .Select(pid => int.TryParse(pid.Trim(), out int val) ? val : 0)
-                    .Where(i => i > 0)
-                    .Distinct()
-                    .ToList();
+                ModelState.Remove("Contest.StartTime");
+                ModelState.Remove("Contest.Duration");
             }
 
-            if (idList.Count == 0 && !string.IsNullOrEmpty(model.ProblemIdsString))
+            // ── Parse problem IDs (prefer right-column picker hidden input) ──
+            var idList = new List<int>();
+            var rawIds = !string.IsNullOrEmpty(model.ProblemIdsString)
+                ? model.ProblemIdsString
+                : problemIds;
+
+            if (!string.IsNullOrEmpty(rawIds))
             {
-                idList = model.ProblemIdsString.Split(',')
+                idList = rawIds.Split(',')
                     .Select(pid => int.TryParse(pid.Trim(), out int val) ? val : 0)
                     .Where(i => i > 0)
                     .Distinct()
@@ -572,7 +599,14 @@ namespace MyMvcApp.Controllers
             if (idList.Count == 0)
             {
                 ModelState.AddModelError("", "At least one problem is required.");
+            }
+
+            if (!ModelState.IsValid)
+            {
                 model.AvailableProblems = await _context.Problems.Where(p => p.IsActive).OrderBy(p => p.Id).ToListAsync();
+                var currentProblems2 = await _context.ContestProblems.Where(cp => cp.ContestId == id).OrderBy(cp => cp.Order).ToListAsync();
+                model.ProblemIdsString = string.Join(",", currentProblems2.Select(cp => cp.ProblemId));
+                model.Contest.Id = id;  // make sure Id survives roundtrip
                 return View(model);
             }
 
@@ -580,65 +614,102 @@ namespace MyMvcApp.Controllers
                 .Where(p => idList.Contains(p.Id) && p.IsActive)
                 .ToListAsync();
 
-            // Update contest properties
-            contest.Title = model.Contest.Title;
+            if (existingProblems.Count == 0)
+            {
+                ModelState.AddModelError("", "None of the specified problem IDs are valid or active.");
+                model.AvailableProblems = await _context.Problems.Where(p => p.IsActive).OrderBy(p => p.Id).ToListAsync();
+                model.Contest.Id = id;
+                return View(model);
+            }
+
+            // ── Update editable fields ──
+            contest.Title       = model.Contest.Title;
             contest.Description = model.Contest.Description;
-            contest.Organizer = model.Contest.Organizer;
-
-            // Ensure StartTime is in UTC
-            var newStartTime = model.Contest.StartTime;
-            if (newStartTime.Kind == DateTimeKind.Local)
-            {
-                newStartTime = newStartTime.ToUniversalTime();
-            }
-            else if (newStartTime.Kind == DateTimeKind.Unspecified)
-            {
-                newStartTime = DateTime.SpecifyKind(newStartTime, DateTimeKind.Local).ToUniversalTime();
-            }
-            contest.StartTime = newStartTime;
-
-            contest.Difficulty = model.Contest.Difficulty;
-            contest.Duration = model.Contest.Duration;
-            contest.MaxParticipants = model.Contest.MaxParticipants;
+            contest.Organizer   = model.Contest.Organizer;
+            contest.Difficulty  = model.Contest.Difficulty;
+            contest.MaxParticipants       = model.Contest.MaxParticipants;
             contest.ShowRankingImmediately = model.Contest.ShowRankingImmediately;
-            contest.IsPrivate = model.Contest.IsPrivate;
-            contest.Password = model.Contest.IsPrivate ? model.Contest.Password : string.Empty;
-            contest.Rules = model.Contest.Rules;
+            contest.IsPrivate   = model.Contest.IsPrivate;
+            contest.Rules       = model.Contest.Rules;
 
-            // Calculate end time
-            if (!string.IsNullOrEmpty(contest.Duration) && contest.Duration.Contains("hour"))
+            // Keep existing password if field is blank (don't wipe it)
+            if (!string.IsNullOrWhiteSpace(model.Contest.Password))
+                contest.Password = model.Contest.Password;
+            if (!contest.IsPrivate)
+                contest.Password = string.Empty;
+
+            // ── Timing ──
+            if (isLive)
             {
-                var hoursMatch = System.Text.RegularExpressions.Regex.Match(contest.Duration, @"\d+");
-                int hours = hoursMatch.Success ? int.Parse(hoursMatch.Value) : 2;
-                contest.EndTime = contest.StartTime.AddHours(hours);
+                // StartTime stays unchanged; only allow EndTimeOverride
+                if (!string.IsNullOrEmpty(EndTimeOverride) &&
+                    DateTime.TryParse(EndTimeOverride, out DateTime newEnd))
+                {
+                    var newEndUtc = newEnd.Kind == DateTimeKind.Local
+                        ? newEnd.ToUniversalTime()
+                        : DateTime.SpecifyKind(newEnd, DateTimeKind.Local).ToUniversalTime();
+
+                    if (newEndUtc > contest.StartTime)
+                    {
+                        contest.EndTime = newEndUtc;
+                        // Recalculate Duration label to stay consistent
+                        var hrs = (contest.EndTime - contest.StartTime).TotalHours;
+                        contest.Duration = hrs == 1 ? "1 hour" : $"{(int)Math.Round(hrs)} hours";
+                    }
+                }
+                // else: keep existing StartTime + EndTime as-is
             }
             else
             {
-                contest.EndTime = contest.StartTime.AddHours(2);
+                // Not live — update StartTime and recalculate EndTime from Duration
+                var newStartTime = model.Contest.StartTime;
+                newStartTime = new DateTime(DateTime.Now.Year, newStartTime.Month, newStartTime.Day, newStartTime.Hour, newStartTime.Minute, 0, newStartTime.Kind);
+
+                if (newStartTime.Kind == DateTimeKind.Local)
+                    newStartTime = newStartTime.ToUniversalTime();
+                else if (newStartTime.Kind == DateTimeKind.Unspecified)
+                    newStartTime = DateTime.SpecifyKind(newStartTime, DateTimeKind.Local).ToUniversalTime();
+
+                contest.StartTime = newStartTime;
+                contest.Duration  = model.Contest.Duration;
+
+                int totalMinutes = ParseDurationToMinutes(contest.Duration ?? "");
+                if (totalMinutes > 0)
+                {
+                    contest.EndTime = contest.StartTime.AddMinutes(totalMinutes);
+                }
+                else
+                {
+                    contest.EndTime = contest.StartTime.AddHours(2);
+                }
             }
 
-            // Update problems
+            // ── Update problem set (remove old, add new in order) ──
             var currentProblems = await _context.ContestProblems.Where(cp => cp.ContestId == id).ToListAsync();
             _context.ContestProblems.RemoveRange(currentProblems);
 
+            // Preserve submission order from idList (so letter assignment respects admin's order)
+            var problemMap = existingProblems.ToDictionary(p => p.Id);
             int order = 1;
-            foreach (var problem in existingProblems)
+            foreach (var pid in idList)
             {
-                _context.ContestProblems.Add(new ContestProblem
+                if (problemMap.TryGetValue(pid, out var problem))
                 {
-                    ContestId = id,
-                    ProblemId = problem.Id,
-                    Order = order++,
-                    Points = problem.Points
-                });
+                    _context.ContestProblems.Add(new ContestProblem
+                    {
+                        ContestId = id,
+                        ProblemId = problem.Id,
+                        Order     = order++,
+                        Points    = problem.Points
+                    });
+                }
             }
-
-            // REMOVED: contest.ProblemCount = existingProblemIds.Count;
-            // (ProblemCount is [NotMapped] and will be calculated on query)
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Contest updated successfully!";
+            TempData["SuccessMessage"] = isLive
+                ? "Contest updated successfully! Changes are live immediately."
+                : "Contest updated successfully!";
             return RedirectToAction("Details", new { id });
         }
 
@@ -880,6 +951,36 @@ namespace MyMvcApp.Controllers
             }
 
             return contestProblems;
+        }
+
+        #endregion
+
+        #region Duration Parsing
+
+        /// <summary>
+        /// Parses duration strings like "2 hours 30 minutes", "1 hour", "0 hours 5 minutes" into total minutes.
+        /// </summary>
+        private int ParseDurationToMinutes(string duration)
+        {
+            int totalMinutes = 0;
+            // Match hours
+            var hoursMatch = System.Text.RegularExpressions.Regex.Match(duration, @"(\d+)\s*hour");
+            if (hoursMatch.Success)
+            {
+                totalMinutes += int.Parse(hoursMatch.Groups[1].Value) * 60;
+            }
+            // Match minutes
+            var minutesMatch = System.Text.RegularExpressions.Regex.Match(duration, @"(\d+)\s*minute");
+            if (minutesMatch.Success)
+            {
+                totalMinutes += int.Parse(minutesMatch.Groups[1].Value);
+            }
+            // Fallback: if nothing matched, try parsing as plain number (legacy)
+            if (totalMinutes == 0 && int.TryParse(duration.Trim(), out int plainMinutes))
+            {
+                totalMinutes = plainMinutes;
+            }
+            return totalMinutes;
         }
 
         #endregion

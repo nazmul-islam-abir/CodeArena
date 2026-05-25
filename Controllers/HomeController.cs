@@ -1,14 +1,38 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using MyMvcApp.Data;
 using MyMvcApp.Models;
 
 namespace MyMvcApp.Controllers;
 
 public class HomeController : Controller
 {
-    public IActionResult Index()
+    private readonly AppDbContext _context;
+
+    public HomeController(AppDbContext context)
     {
-        return View();
+        _context = context;
+    }
+
+    public async Task<IActionResult> Index()
+    {
+        var viewModel = new HomeViewModel
+        {
+            TotalActiveUsers = await _context.Users.CountAsync(),
+            FeaturedProblems = await _context.Problems
+                .Where(p => p.IsActive && !p.IsPrivate)
+                .OrderByDescending(p => p.SolvedCount)
+                .Take(3)
+                .ToListAsync(),
+            TopUsers = await _context.Users
+                .Where(u => u.IsActive && u.Role == "User")
+                .OrderByDescending(u => u.TotalPoints)
+                .Take(3)
+                .ToListAsync()
+        };
+
+        return View(viewModel);
     }
 
     public IActionResult Privacy()

@@ -245,7 +245,6 @@ namespace MyMvcApp.Services
 
                 // Update statistics
                 await UpdateUserStatisticsAsync(dbContext, submission.UserId, problemId, problem.Points);
-                await UpdateProblemStatisticsAsync(dbContext, problemId, true);
             }
             catch (Exception ex)
             {
@@ -258,6 +257,10 @@ namespace MyMvcApp.Services
                     submission.ErrorMessage = ex.Message;
                     await dbContext.SaveChangesAsync();
                 }
+            }
+            finally
+            {
+                await UpdateProblemStatisticsAsync(dbContext, problemId);
             }
         }
 
@@ -460,18 +463,22 @@ namespace MyMvcApp.Services
             }
         }
 
-        private async Task UpdateProblemStatisticsAsync(AppDbContext dbContext, int problemId, bool isSolved)
+        private async Task UpdateProblemStatisticsAsync(AppDbContext dbContext, int problemId)
         {
             try
             {
                 var problem = await dbContext.Problems.FindAsync(problemId);
                 if (problem != null)
                 {
-                    problem.SubmissionCount++;
-                    if (isSolved)
-                    {
-                        problem.SolvedCount++;
-                    }
+                    problem.SubmissionCount = await dbContext.Submissions
+                        .CountAsync(s => s.ProblemId == problemId);
+
+                    problem.SolvedCount = await dbContext.Submissions
+                        .Where(s => s.ProblemId == problemId && s.Verdict == "AC")
+                        .Select(s => s.UserId)
+                        .Distinct()
+                        .CountAsync();
+
                     await dbContext.SaveChangesAsync();
                 }
             }

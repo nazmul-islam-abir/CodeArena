@@ -1,0 +1,86 @@
+@model IEnumerable<MyMvcApp.Models.Contest>
+@{
+    ViewData["Title"] = "Contest Control";
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-gradient mb-0">Contest Control</h2>
+    <a href="/Contest/Create" class="btn btn-primary shadow-sm"><i class="bi bi-plus-circle me-1"></i> New Contest</a>
+</div>
+
+<div class="card glass-card overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Start Time</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var contest in Model)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-bold">@contest.Title</div>
+                            <small class="text-secondary">@(contest.IsPrivate ? "Private" : "Public")</small>
+                        </td>
+                        <td>@contest.StartTime.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</td>
+                        <td>@contest.Duration</td>
+                        <td>
+                            @{
+                                var now = DateTime.UtcNow;
+                                string badgeClass = "bg-secondary";
+                                string status = contest.Status;
+                                
+                                if (now >= contest.StartTime && now <= contest.EndTime)
+                                {
+                                    badgeClass = "bg-success";
+                                    status = "Active";
+                                }
+                                else if (now < contest.StartTime)
+                                {
+                                    badgeClass = "bg-warning";
+                                    status = "Upcoming";
+                                }
+                                else
+                                {
+                                    status = "Ended";
+                                }
+
+                                if (contest.IsDeleted)
+                                {
+                                    badgeClass = "bg-danger";
+                                    status = "Deleted";
+                                }
+                            }
+                            <span class="badge @badgeClass">@status</span>
+                            @if(contest.IsFrozen)
+                            {
+                                <span class="badge bg-info ms-1"><i class="bi bi-snow"></i> Frozen</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="/Contest/Details/@contest.Id" class="btn btn-sm btn-outline-info" title="View"><i class="bi bi-eye"></i></a>
+                                <a href="/Contest/Edit/@contest.Id" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                                <form action="/Contest/ToggleFreeze/@contest.Id" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="@(contest.IsFrozen ? "Unfreeze" : "Freeze")"><i class="bi @(contest.IsFrozen ? "bi-sun" : "bi-snow")"></i></button>
+                                </form>
+                                <form action="/Contest/Delete/@contest.Id" method="post" onsubmit="return confirm('Are you sure you want to delete this contest?');" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

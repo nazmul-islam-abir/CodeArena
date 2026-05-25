@@ -31,6 +31,7 @@ namespace MyMvcApp.Models
         public int MemoryLimit { get; set; }
         public DateTime CreatedAt { get; set; }
         public bool IsActive { get; set; }
+        public bool IsPrivate { get; set; } = false;
 
         // Statistics (calculated)
         public int SolvedCount { get; set; }

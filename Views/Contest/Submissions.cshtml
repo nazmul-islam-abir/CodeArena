@@ -1,0 +1,427 @@
+@* Views/Contest/Submissions.cshtml - My Submissions in a specific contest *@
+@model IEnumerable<MyMvcApp.Models.Submission>
+@{
+    var contest = ViewBag.Contest as MyMvcApp.Models.Contest;
+    ViewData["Title"] = $"My Submissions – {contest?.Title}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var totalCount   = Model?.Count() ?? 0;
+    var acCount      = Model?.Count(s => s.Verdict == "AC")  ?? 0;
+    var waCount      = Model?.Count(s => s.Verdict == "WA")  ?? 0;
+    var tleCount     = Model?.Count(s => s.Verdict == "TLE") ?? 0;
+    var otherCount   = totalCount - acCount - waCount - tleCount;
+}
+
+<div class="container py-4">
+
+    @* ── Breadcrumb ── *@
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Contest" class="text-decoration-none">Contests</a></li>
+            <li class="breadcrumb-item"><a href="/Contest/@contest?.Id" class="text-decoration-none">@contest?.Title</a></li>
+            <li class="breadcrumb-item active" aria-current="page">My Submissions</li>
+        </ol>
+    </nav>
+
+    @* ── Page Header ── *@
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="fw-bold mb-1">
+                <i class="bi bi-clock-history me-2" style="color: var(--primary);"></i>My Submissions
+            </h1>
+            <p class="text-secondary mb-0">
+                Your submissions for <strong>@contest?.Title</strong>
+            </p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="/Contest/@contest?.Id" class="btn btn-outline-theme">
+                <i class="bi bi-arrow-left me-2"></i>Back to Contest
+            </a>
+            <a href="/Contest/@contest?.Id/Ranking" class="btn btn-outline-warning">
+                <i class="bi bi-trophy me-2"></i>Leaderboard
+            </a>
+        </div>
+    </div>
+
+    @* ── Summary Stats ── *@
+    @if (totalCount > 0)
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stats-card text-center p-3">
+                    <div class="stats-number text-primary">@totalCount</div>
+                    <div class="stats-label">Total</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card text-center p-3">
+                    <div class="stats-number text-success">@acCount</div>
+                    <div class="stats-label">Accepted</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card text-center p-3">
+                    <div class="stats-number text-danger">@waCount</div>
+                    <div class="stats-label">Wrong Answer</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card text-center p-3">
+                    <div class="stats-number" style="color: var(--text-secondary);">@(tleCount + otherCount)</div>
+                    <div class="stats-label">Other</div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ── Submissions Table ── *@
+    <div class="card shadow-sm">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <h5 class="fw-bold mb-0">
+                <i class="bi bi-list-check me-2 text-primary"></i>Submissions
+                @if (totalCount > 0)
+                {
+                    <span class="badge bg-secondary ms-2">@totalCount</span>
+                }
+            </h5>
+            @if (totalCount > 0)
+            {
+                <small class="text-secondary">Sorted by most recent first</small>
+            }
+        </div>
+
+        <div class="card-body p-0">
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="submissionsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 70px">#</th>
+                                <th>Problem</th>
+                                <th>Language</th>
+                                <th>Verdict</th>
+                                <th>Time</th>
+                                <th>Memory</th>
+                                <th>Test Cases</th>
+                                <th>Submitted At</th>
+                                <th style="width: 60px"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Model)
+                            {
+                                var verdictClass = s.Verdict switch {
+                                    "AC"  => "verdict-ac",
+                                    "WA"  => "verdict-wa",
+                                    "TLE" => "verdict-tle",
+                                    "CE"  => "verdict-ce",
+                                    "MLE" => "verdict-mle",
+                                    _     => "verdict-other"
+                                };
+
+                                var verdictLabel = s.Verdict switch {
+                                    "AC"           => "Accepted",
+                                    "WA"           => "Wrong Answer",
+                                    "TLE"          => "Time Limit Exceeded",
+                                    "CE"           => "Compile Error",
+                                    "MLE"          => "Memory Limit Exceeded",
+                                    "Processing"   => "Processing…",
+                                    "Queued"       => "Queued",
+                                    _              => s.Verdict ?? "Unknown"
+                                };
+
+                                <tr class="@(s.Verdict == "AC" ? "row-ac" : "")">
+                                    <td>
+                                        <span class="text-secondary small">#@s.Id</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-medium">@s.ProblemTitle</div>
+                                        @if (s.ContestId.HasValue)
+                                        {
+                                            <small class="text-secondary">Contest #@s.ContestId</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="lang-badge">@s.LanguageName</span>
+                                    </td>
+                                    <td>
+                                        <span class="verdict-badge @verdictClass">
+                                            @if (s.Verdict == "AC")
+                                            {
+                                                <i class="bi bi-check-circle-fill me-1"></i>
+                                            }
+                                            else if (s.Verdict is "Processing" or "Queued")
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-x-circle-fill me-1"></i>
+                                            }
+                                            @verdictLabel
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (s.ExecutionTime.HasValue)
+                                        {
+                                            <span>@s.ExecutionTime.Value.ToString("F3") s</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-secondary">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (s.MemoryUsed.HasValue)
+                                        {
+                                            <span>@((s.MemoryUsed.Value / 1024.0).ToString("F1")) MB</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-secondary">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (s.TestCasesPassed.HasValue && s.TotalTestCases.HasValue)
+                                        {
+                                            var pct = s.TotalTestCases > 0
+                                                ? ((s.TestCasesPassed.Value * 100.0) / s.TotalTestCases.Value).ToString("F0")
+                                                : "0";
+                                            var barColor = s.Verdict == "AC" ? "bg-success" : "bg-danger";
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height: 6px; min-width: 60px;">
+                                                    <div class="progress-bar @barColor" style="width: @(pct)%"></div>
+                                                </div>
+                                                <small class="text-secondary text-nowrap">@s.TestCasesPassed/@s.TotalTestCases</small>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-secondary">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="text-nowrap">@s.SubmittedAt.ToLocalTime().ToString("MMM dd, HH:mm")</div>
+                                        <small class="text-secondary">@s.SubmittedAt.ToLocalTime().ToString("yyyy")</small>
+                                    </td>
+                                    <td>
+                                        <a href="/Submissions/@s.Id"
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="View submission details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="empty-state text-center py-5">
+                    <i class="bi bi-inbox fs-1 d-block mb-3" style="color: var(--border-light);"></i>
+                    <h5 class="fw-semibold mb-2">No submissions yet</h5>
+                    <p class="text-secondary mb-4">You haven't submitted any solutions for this contest.</p>
+                    @if (contest != null)
+                    {
+                        <a href="/Contest/@contest.Id" class="btn btn-primary">
+                            <i class="bi bi-arrow-right me-2"></i>Go to Contest Problems
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ── Footer note ── *@
+    @if (totalCount > 0)
+    {
+        <div class="mt-3 text-center text-secondary small">
+            <i class="bi bi-info-circle me-1"></i>
+            Showing all <strong>@totalCount</strong> submission@(totalCount == 1 ? "" : "s") for this contest.
+            <a href="/Submissions?contestId=@contest?.Id" class="ms-1">View full list</a>
+        </div>
+    }
+</div>
+
+<style>
+    /* ── Stats cards ── */
+    .stats-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .stats-number {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 4px;
+    }
+
+    .stats-label {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* ── Language badge ── */
+    .lang-badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 20px;
+        background-color: var(--primary-light);
+        color: var(--primary);
+        font-size: 0.78rem;
+        font-weight: 500;
+    }
+
+    /* ── Verdict badges ── */
+    .verdict-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .verdict-ac {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+
+    body.dark .verdict-ac {
+        background-color: #14532d;
+        color: #86efac;
+    }
+
+    .verdict-wa {
+        background-color: #fee2e2;
+        color: #b91c1c;
+    }
+
+    body.dark .verdict-wa {
+        background-color: #450a0a;
+        color: #fca5a5;
+    }
+
+    .verdict-tle {
+        background-color: #fef9c3;
+        color: #854d0e;
+    }
+
+    body.dark .verdict-tle {
+        background-color: #422006;
+        color: #fde68a;
+    }
+
+    .verdict-ce {
+        background-color: #ede9fe;
+        color: #5b21b6;
+    }
+
+    body.dark .verdict-ce {
+        background-color: #2e1065;
+        color: #c4b5fd;
+    }
+
+    .verdict-mle {
+        background-color: #ffedd5;
+        color: #c2410c;
+    }
+
+    body.dark .verdict-mle {
+        background-color: #431407;
+        color: #fdba74;
+    }
+
+    .verdict-other {
+        background-color: var(--bg-body);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-light);
+    }
+
+    /* ── Accepted row tint ── */
+    .row-ac {
+        background-color: rgba(16, 185, 129, 0.05) !important;
+    }
+
+    body.dark .row-ac {
+        background-color: rgba(16, 185, 129, 0.07) !important;
+    }
+
+    /* ── Table ── */
+    .table thead th {
+        background-color: var(--bg-body);
+        color: var(--text-secondary);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid var(--border-light);
+        padding: 12px 16px;
+    }
+
+    .table tbody td {
+        padding: 12px 16px;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .table tbody tr:hover {
+        background-color: var(--primary-light) !important;
+    }
+
+    .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* ── Card ── */
+    .card {
+        background-color: var(--bg-card);
+        border-color: var(--border-light);
+        border-radius: 12px;
+    }
+
+    .card-header {
+        background-color: var(--bg-card);
+        border-bottom: 1px solid var(--border-light);
+        padding: 16px 20px;
+    }
+
+    /* ── Breadcrumb ── */
+    .breadcrumb-item a {
+        color: var(--primary);
+    }
+
+    .breadcrumb-item.active {
+        color: var(--text-secondary);
+    }
+
+    /* ── Responsive ── */
+    @@media (max-width: 768px) {
+        .table td, .table th {
+            font-size: 0.75rem;
+            padding: 8px 10px;
+        }
+
+        .verdict-badge {
+            font-size: 0.72rem;
+            padding: 3px 8px;
+        }
+
+        .stats-number {
+            font-size: 1.6rem;
+        }
+    }
+</style>

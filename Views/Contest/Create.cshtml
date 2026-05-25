@@ -35,38 +35,40 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label class="form-label fw-bold">Start Date & Time <span class="text-danger">*</span></label>
                                 <input asp-for="Contest.StartTime" type="datetime-local" class="form-control" required />
                                 <span asp-validation-for="Contest.StartTime" class="text-danger"></span>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Duration</label>
-                                <select asp-for="Contest.Duration" class="form-select">
-                                    <option value="1 hour">1 hour</option>
-                                    <option value="2 hours" selected>2 hours</option>
-                                    <option value="3 hours">3 hours</option>
-                                    <option value="4 hours">4 hours</option>
-                                    <option value="24 hours">24 hours</option>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Duration (Hours)</label>
+                                <select id="durationHours" class="form-select">
+                                    @for (int h = 0; h <= 24; h++)
+                                    {
+                                        if (h == 2)
+                                        {
+                                            <option value="@h" selected>@h hrs</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@h">@h hrs</option>
+                                        }
+                                    }
                                 </select>
                             </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Duration (Minutes)</label>
+                                <select id="durationMinutes" class="form-select">
+                                    @for (int m = 0; m <= 55; m += 5)
+                                    {
+                                        <option value="@m">@m mins</option>
+                                    }
+                                </select>
+                            </div>
+                            <input type="hidden" asp-for="Contest.Duration" id="durationHidden" value="2 hours 0 minutes" />
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Difficulty</label>
-                                <select asp-for="Contest.Difficulty" class="form-select">
-                                    <option value="Easy">Easy</option>
-                                    <option value="Medium">Medium</option>
-                                    <option value="Hard">Hard</option>
-                                    <option value="Mixed" selected>Mixed</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Max Participants</label>
-                                <input asp-for="Contest.MaxParticipants" type="number" class="form-control" value="1000" />
-                            </div>
-                        </div>
+
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -113,6 +115,16 @@
     document.getElementById('isPrivateSwitch').addEventListener('change', function() {
         document.getElementById('passwordField').style.display = this.checked ? 'block' : 'none';
     });
+
+    function syncDuration() {
+        var h = parseInt(document.getElementById('durationHours').value);
+        var m = parseInt(document.getElementById('durationMinutes').value);
+        if (h === 0 && m === 0) { m = 5; document.getElementById('durationMinutes').value = '5'; }
+        document.getElementById('durationHidden').value = h + ' hours ' + m + ' minutes';
+    }
+    document.getElementById('durationHours').addEventListener('change', syncDuration);
+    document.getElementById('durationMinutes').addEventListener('change', syncDuration);
+    syncDuration();
 </script>
 
 <style>

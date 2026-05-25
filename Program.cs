@@ -55,12 +55,22 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        // Apply any pending EF Core migrations instead of executing raw SQL
+        // Apply any pending EF Core migrations
         context.Database.Migrate();
     }
     catch (Exception ex)
     {
         Console.WriteLine("Migration warning: " + ex.Message);
+    }
+
+    try
+    {
+        // Ensure is_private column exists on problems table (snake_case naming convention)
+        context.Database.ExecuteSqlRaw("ALTER TABLE problems ADD COLUMN IF NOT EXISTS is_private boolean NOT NULL DEFAULT false;");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("ALTER TABLE warning: " + ex.Message);
     }
 
     // Ensure user statistic fields are not NULL by updating via EF

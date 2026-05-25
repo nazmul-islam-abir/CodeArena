@@ -31,7 +31,7 @@
                         <span class="badge-custom"><i class="bi bi-person-circle me-1"></i> @Model.Organizer</span>
                         <span class="badge-custom"><i class="bi bi-calendar-event me-1"></i> @Model.StartTime.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</span>
                         <span class="badge-custom"><i class="bi bi-hourglass-split me-1"></i> @Model.Duration</span>
-                        <span class="badge-custom"><i class="bi bi-people-fill me-1"></i> @Model.ParticipantCount / @Model.MaxParticipants participants</span>
+                        <span class="badge-custom"><i class="bi bi-people-fill me-1"></i> @Model.ParticipantCount participants</span>
                         <span class="badge-custom"><i class="bi bi-puzzle-fill me-1"></i> @Model.ProblemCount problems</span>
                     </div>
                     @if (!string.IsNullOrEmpty(Model.Rules))

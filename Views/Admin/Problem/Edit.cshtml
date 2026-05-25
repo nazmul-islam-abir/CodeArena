@@ -80,6 +80,16 @@
                                     </div>
 
                                     <hr />
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            <input asp-for="IsPrivate" class="form-check-input" type="checkbox" />
+                                            <label asp-for="IsPrivate" class="form-check-label small fw-bold">Private Problem</label>
+                                        </div>
+                                        <div class="form-text mt-1" style="font-size: 0.75rem;">Only visible to admins. Automatically becomes public if attached to a completed contest.</div>
+                                    </div>
+
+                                    <hr />
 
                                     <div class="mb-3">
                                         <label asp-for="TimeLimit" class="form-label small fw-bold">Time Limit (Seconds)</label>

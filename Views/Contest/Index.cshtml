@@ -50,7 +50,7 @@
                                     <span class="badge bg-dark"><i class="bi bi-lock-fill me-1"></i>Private</span>
                                 }
                             </div>
-                            <span class="badge bg-info">@contest.Difficulty</span>
+
                         </div>
                         <h5 class="fw-bold mb-2">@contest.Title</h5>
                         <p class="text-secondary small mb-3">@(contest.Description.Length > 100 ? contest.Description.Substring(0, 100) + "..." : contest.Description)</p>
@@ -131,18 +131,6 @@
 </script>
 
 <style>
-    .card {
-        background-color: var(--bg-card);
-        border: 1px solid var(--border-light);
-        border-radius: 16px;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--card-shadow-hover);
-        }
-
     .contest-card {
         transition: all 0.2s;
     }

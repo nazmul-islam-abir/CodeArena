@@ -14,15 +14,35 @@ namespace MyMvcApp.Controllers
             _context = context;
         }
 
-        // This handles /Problem (list view)
+        // Helper: get IDs of problems whose contest has ended (so they become public)
+        private async Task<HashSet<int>> GetPublicizedProblemIdsAsync()
+        {
+            var now = DateTime.UtcNow;
+            var ids = await _context.ContestProblems
+                .Where(cp => _context.Contests.Any(c => c.Id == cp.ContestId && c.EndTime <= now))
+                .Select(cp => cp.ProblemId)
+                .Distinct()
+                .ToListAsync();
+            return ids.ToHashSet();
+        }
+
         public async Task<IActionResult> Index()
         {
             try
             {
+                var isAdmin = User.IsInRole("Admin") || HttpContext.Session.GetString("UserRole") == "Admin";
+
                 var problems = await _context.Problems
                     .Where(p => p.IsActive)
                     .OrderBy(p => p.Id)
                     .ToListAsync();
+
+                if (!isAdmin)
+                {
+                    var publicizedIds = await GetPublicizedProblemIdsAsync();
+                    problems = problems.Where(p => !p.IsPrivate || publicizedIds.Contains(p.Id)).ToList();
+                }
+
                 return View(problems);
             }
             catch (Exception ex)
@@ -38,12 +58,24 @@ namespace MyMvcApp.Controllers
         {
             try
             {
+                var isAdmin = User.IsInRole("Admin") || HttpContext.Session.GetString("UserRole") == "Admin";
+
                 var problem = await _context.Problems
                     .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);
 
                 if (problem == null)
                 {
                     return NotFound();
+                }
+
+                // Block non-admins from accessing private problems that haven't been publicized
+                if (!isAdmin && problem.IsPrivate)
+                {
+                    var publicizedIds = await GetPublicizedProblemIdsAsync();
+                    if (!publicizedIds.Contains(problem.Id))
+                    {
+                        return NotFound();
+                    }
                 }
 
                 ViewBag.ContestId = contestId;
@@ -69,12 +101,24 @@ namespace MyMvcApp.Controllers
 
             try
             {
+                var isAdmin = User.IsInRole("Admin") || HttpContext.Session.GetString("UserRole") == "Admin";
+
                 var problem = await _context.Problems
                     .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);
 
                 if (problem == null)
                 {
                     return NotFound();
+                }
+
+                // Allow access if solving via contest (contestId provided), admin, or problem is public/publicized
+                if (!isAdmin && problem.IsPrivate && contestId == null)
+                {
+                    var publicizedIds = await GetPublicizedProblemIdsAsync();
+                    if (!publicizedIds.Contains(problem.Id))
+                    {
+                        return NotFound();
+                    }
                 }
 
                 // Store problem info in TempData to pass to compiler
