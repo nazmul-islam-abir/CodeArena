@@ -27,6 +27,29 @@ namespace MyMvcApp.Controllers
                     .OrderByDescending(s => s.SubmittedAt)
                     .AsQueryable();
 
+                // Submissions Access Control logic for Running Contests
+                bool isAdminOrSetter = User.IsInRole("Admin") || User.IsInRole("Setter");
+                var currentUserIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                int? currentUserId = int.TryParse(currentUserIdStr, out int cid) ? cid : null;
+
+                if (!isAdminOrSetter)
+                {
+                    var now = DateTime.UtcNow;
+                    var runningContestIds = _context.Contests
+                        .Where(c => c.StartTime <= now && c.EndTime >= now)
+                        .Select(c => c.Id)
+                        .ToList();
+
+                    if (runningContestIds.Any())
+                    {
+                        query = query.Where(s => 
+                            !s.ContestId.HasValue || 
+                            !runningContestIds.Contains(s.ContestId.Value) || 
+                            s.UserId == currentUserId
+                        );
+                    }
+                }
+
                 if (problemId.HasValue)
                 {
                     query = query.Where(s => s.ProblemId == problemId.Value);
@@ -91,7 +114,7 @@ namespace MyMvcApp.Controllers
         // This handles /Submissions/my (my submissions)
         public IActionResult My()
         {
-            var userIdStr = HttpContext.Session.GetString("UserId");
+            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdStr))
                 return RedirectToAction("Login", "Auth");
 
@@ -161,7 +184,7 @@ namespace MyMvcApp.Controllers
         }
 
         // ADMIN: Delete a submission
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Setter")]
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
@@ -188,7 +211,7 @@ namespace MyMvcApp.Controllers
         }
 
         // ADMIN: Re-judge (resubmit) a submission
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Setter")]
         [HttpPost]
         public async Task<IActionResult> Rejudge(int id)
         {
@@ -229,7 +252,7 @@ namespace MyMvcApp.Controllers
         }
 
         // ADMIN: Delete all pending submissions
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Setter")]
         [HttpPost]
         public async Task<IActionResult> ClearAllPending()
         {

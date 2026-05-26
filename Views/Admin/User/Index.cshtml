@@ -37,6 +37,10 @@
                             {
                                 <span class="badge bg-danger">Admin</span>
                             }
+                            else if (u.Role == "Setter")
+                            {
+                                <span class="badge bg-warning text-dark">Setter</span>
+                            }
                             else
                             {
                                 <span class="badge bg-secondary">User</span>
@@ -56,18 +60,35 @@
                             <div class="btn-group">
                                 @if (u.Id.ToString() != currentUserId)
                                 {
-                                    if (u.Role == "Admin")
-                                    {
-                                        <form asp-action="RemoveAdmin" asp-route-id="@u.Id" method="post" style="display:inline;">
-                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Remove Admin"><i class="bi bi-person-down"></i></button>
-                                        </form>
-                                    }
-                                    else
-                                    {
-                                        <form asp-action="MakeAdmin" asp-route-id="@u.Id" method="post" style="display:inline;">
-                                            <button type="submit" class="btn btn-sm btn-outline-info" title="Make Admin"><i class="bi bi-person-up"></i></button>
-                                        </form>
-                                    }
+                                    <button type="button" class="btn btn-sm btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Change Role">
+                                        <i class="bi bi-person-badge"></i>
+                                    </button>
+                                    <ul class="dropdown-menu shadow">
+                                        @if (u.Role != "Admin")
+                                        {
+                                            <li>
+                                                <form asp-action="MakeAdmin" asp-route-id="@u.Id" method="post">
+                                                    <button type="submit" class="dropdown-item"><i class="bi bi-shield-lock text-danger me-2"></i>Make Admin</button>
+                                                </form>
+                                            </li>
+                                        }
+                                        @if (u.Role != "Setter")
+                                        {
+                                            <li>
+                                                <form asp-action="MakeSetter" asp-route-id="@u.Id" method="post">
+                                                    <button type="submit" class="dropdown-item"><i class="bi bi-pencil-square text-warning me-2"></i>Make Setter</button>
+                                                </form>
+                                            </li>
+                                        }
+                                        @if (!string.IsNullOrEmpty(u.Role))
+                                        {
+                                            <li>
+                                                <form asp-action="MakeUser" asp-route-id="@u.Id" method="post">
+                                                    <button type="submit" class="dropdown-item"><i class="bi bi-person text-secondary me-2"></i>Make User</button>
+                                                </form>
+                                            </li>
+                                        }
+                                    </ul>
                                     
                                     <form asp-action="ToggleStatus" asp-route-id="@u.Id" method="post" style="display:inline;">
                                         <button type="submit" class="btn btn-sm @(u.IsActive ? "btn-outline-secondary" : "btn-outline-success")" title="@(u.IsActive ? "Deactivate" : "Activate")">

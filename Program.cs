@@ -24,6 +24,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Register services
 builder.Services.AddScoped<JudgeService>();
 builder.Services.AddScoped<CodeforcesService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Add session services
 builder.Services.AddDistributedMemoryCache();
@@ -71,6 +72,17 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         Console.WriteLine("ALTER TABLE warning: " + ex.Message);
+    }
+
+    try
+    {
+        // Ensure reset_token columns exist on users table
+        context.Database.ExecuteSqlRaw("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token text;");
+        context.Database.ExecuteSqlRaw("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expiry timestamp without time zone;");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("ALTER TABLE users warning: " + ex.Message);
     }
 
     // Ensure user statistic fields are not NULL by updating via EF

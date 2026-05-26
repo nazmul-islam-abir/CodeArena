@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace MyMvcApp.Controllers.Admin.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Setter")]
     [Route("Admin/Contests")]
     public class AdminContestController : Controller
     {
@@ -29,3 +29,4 @@ namespace MyMvcApp.Controllers.Admin.Controllers
         }
     }
 }
+

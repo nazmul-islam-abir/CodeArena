@@ -13,16 +13,18 @@ namespace MyMvcApp.Controllers
     public class AuthController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly MyMvcApp.Services.IEmailService _emailService;
 
-        public AuthController(AppDbContext context)
+        public AuthController(AppDbContext context, MyMvcApp.Services.IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         [HttpGet]
         public IActionResult Login()
         {
-            if (HttpContext.Session.GetString("UserId") != null)
+            if (User.Identity != null && User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Index", "Home");
             }
@@ -94,7 +96,7 @@ namespace MyMvcApp.Controllers
         [HttpGet]
         public IActionResult Signup()
         {
-            if (HttpContext.Session.GetString("UserId") != null)
+            if (User.Identity != null && User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Index", "Home");
             }
@@ -184,7 +186,7 @@ namespace MyMvcApp.Controllers
         [HttpGet]
         public async Task<IActionResult> Profile()
         {
-            var userIdStr = HttpContext.Session.GetString("UserId");
+            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdStr))
             {
                 TempData["ErrorMessage"] = "Please login to view your profile.";
@@ -297,6 +299,86 @@ namespace MyMvcApp.Controllers
         {
             string hashedInput = HashPassword(password);
             return hashedInput == hash;
+        }
+
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+            if (user == null)
+            {
+                // Return success anyway to prevent email enumeration
+                TempData["SuccessMessage"] = "If an account with that email exists, a password reset link has been sent.";
+                return RedirectToAction("Login");
+            }
+
+            // Generate Token
+            var tokenBytes = new byte[32];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(tokenBytes);
+            }
+            var token = Convert.ToBase64String(tokenBytes);
+
+            user.ResetToken = token;
+            user.ResetTokenExpiry = DateTime.UtcNow.AddHours(1);
+            await _context.SaveChangesAsync();
+
+            // Send Email
+            var resetLink = Url.Action("ResetPassword", "Auth", new { token = token, email = user.Email }, Request.Scheme);
+            var emailBody = $"<p>You requested a password reset. Click the link below to reset your password:</p><p><a href='{resetLink}'>Reset Password</a></p><p>This link will expire in 1 hour.</p>";
+            
+            try
+            {
+                await _emailService.SendEmailAsync(user.Email, "Password Reset", emailBody);
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "Failed to send email. Please try again later. " + ex.Message);
+                return View(model);
+            }
+
+            TempData["SuccessMessage"] = "If an account with that email exists, a password reset link has been sent.";
+            return RedirectToAction("Login");
+        }
+
+        [HttpGet]
+        public IActionResult ResetPassword(string token, string email)
+        {
+            if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(email))
+            {
+                return RedirectToAction("Login");
+            }
+            return View(new ResetPasswordViewModel { Token = token, Email = email });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email && u.ResetToken == model.Token);
+            if (user == null || user.ResetTokenExpiry < DateTime.UtcNow)
+            {
+                ModelState.AddModelError("", "Invalid or expired reset token.");
+                return View(model);
+            }
+
+            user.PasswordHash = HashPassword(model.Password);
+            user.ResetToken = null;
+            user.ResetTokenExpiry = null;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Your password has been successfully reset. Please log in.";
+            return RedirectToAction("Login");
         }
     }
 }

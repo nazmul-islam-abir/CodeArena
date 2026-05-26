@@ -1,0 +1,593 @@
+@* Views/Contest/Registrations.cshtml - Admin Contest Registration Management *@
+@model IEnumerable<MyMvcApp.Models.ContestRegistration>
+@{
+    ViewData["Title"] = "Contest Registrations";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var contest = ViewBag.Contest as MyMvcApp.Models.Contest;
+    int totalCount = ViewBag.TotalCount ?? 0;
+    int approvedCount = ViewBag.ApprovedCount ?? 0;
+    int pendingCount = ViewBag.PendingCount ?? 0;
+    int rejectedCount = ViewBag.RejectedCount ?? 0;
+    string currentFilter = ViewBag.CurrentFilter ?? "All";
+}
+
+<div class="registrations-admin-page">
+    <div class="container py-4">
+
+        <!-- Breadcrumb Navigation -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/Contest" class="text-decoration-none"><i class="bi bi-trophy me-1"></i>Contests</a></li>
+                <li class="breadcrumb-item"><a href="/Contest/@contest?.Id" class="text-decoration-none">@contest?.Title</a></li>
+                <li class="breadcrumb-item active">Registrations</li>
+            </ol>
+        </nav>
+
+        <!-- Page Header -->
+        <div class="page-header-card mb-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <h1 class="fw-bold mb-1">
+                        <i class="bi bi-people-fill me-2 text-gradient"></i>Registration Management
+                    </h1>
+                    <p class="text-secondary mb-0">
+                        Manage participant registrations for <strong class="text-primary">@contest?.Title</strong>
+                    </p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="/Contest/@contest?.Id" class="btn btn-outline-theme">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Contest
+                    </a>
+                    <a href="/Contest/Edit/@contest?.Id" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil me-1"></i>Edit Contest
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stat-card stat-total" id="stat-total">
+                    <div class="stat-icon">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div class="stat-value">@totalCount</div>
+                    <div class="stat-label">Total Registrations</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card stat-approved" id="stat-approved">
+                    <div class="stat-icon">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <div class="stat-value">@approvedCount</div>
+                    <div class="stat-label">Approved</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card stat-pending" id="stat-pending">
+                    <div class="stat-icon">
+                        <i class="bi bi-clock-fill"></i>
+                    </div>
+                    <div class="stat-value">@pendingCount</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card stat-rejected" id="stat-rejected">
+                    <div class="stat-icon">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </div>
+                    <div class="stat-value">@rejectedCount</div>
+                    <div class="stat-label">Rejected</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Bar -->
+        <div class="control-bar mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <!-- Filter Tabs -->
+                <div class="filter-tabs" id="filter-tabs">
+                    <a href="/Contest/@contest?.Id/Registrations" class="filter-tab @(currentFilter == "All" ? "active" : "")">
+                        <i class="bi bi-grid-3x3-gap me-1"></i>All <span class="filter-count">@totalCount</span>
+                    </a>
+                    <a href="/Contest/@contest?.Id/Registrations?filter=Approved" class="filter-tab @(currentFilter == "Approved" ? "active" : "")">
+                        <i class="bi bi-check-circle me-1"></i>Approved <span class="filter-count">@approvedCount</span>
+                    </a>
+                    <a href="/Contest/@contest?.Id/Registrations?filter=Pending" class="filter-tab @(currentFilter == "Pending" ? "active" : "")">
+                        <i class="bi bi-clock me-1"></i>Pending <span class="filter-count">@pendingCount</span>
+                    </a>
+                    <a href="/Contest/@contest?.Id/Registrations?filter=Rejected" class="filter-tab @(currentFilter == "Rejected" ? "active" : "")">
+                        <i class="bi bi-x-circle me-1"></i>Rejected <span class="filter-count">@rejectedCount</span>
+                    </a>
+                </div>
+
+                <!-- Bulk Actions -->
+                @if (pendingCount > 0)
+                {
+                    <div class="d-flex gap-2">
+                        <form method="post" action="/Contest/@contest?.Id/BulkApproveAll" onsubmit="return confirm('Approve all @pendingCount pending registration(s)?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-success btn-sm" id="btn-bulk-approve">
+                                <i class="bi bi-check-all me-1"></i>Approve All Pending
+                            </button>
+                        </form>
+                        <form method="post" action="/Contest/@contest?.Id/BulkRejectAll" onsubmit="return confirm('Reject all @pendingCount pending registration(s)?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-danger btn-sm" id="btn-bulk-reject">
+                                <i class="bi bi-x-lg me-1"></i>Reject All Pending
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+
+            <!-- Search Bar -->
+            <div class="mt-3">
+                <div class="search-wrapper">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" class="form-control search-input" id="searchInput"
+                           placeholder="Search by username, name, or email..." autocomplete="off">
+                </div>
+            </div>
+        </div>
+
+        <!-- Registrations Table -->
+        <div class="card registrations-card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle" id="registrationsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px">#</th>
+                                <th>Participant</th>
+                                <th>Email</th>
+                                <th>Registered At</th>
+                                <th>Status</th>
+                                <th style="width: 220px">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <div class="empty-state">
+                                            <i class="bi bi-inbox display-1 text-secondary mb-3 d-block"></i>
+                                            <h5 class="text-secondary">No registrations found</h5>
+                                            <p class="text-secondary mb-0">
+                                                @if (currentFilter != "All")
+                                                {
+                                                    <span>No <strong>@currentFilter.ToLower()</strong> registrations. </span>
+                                                    <a href="/Contest/@contest?.Id/Registrations">View all</a>
+                                                }
+                                                else
+                                                {
+                                                    <span>No one has registered for this contest yet.</span>
+                                                }
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                int index = 1;
+                                foreach (var reg in Model)
+                                {
+                                    var user = reg.User;
+                                    string statusClass = reg.Status switch
+                                    {
+                                        "Approved" => "status-approved",
+                                        "Pending" => "status-pending",
+                                        "Rejected" => "status-rejected",
+                                        _ => "status-unknown"
+                                    };
+                                    string badgeClass = reg.Status switch
+                                    {
+                                        "Approved" => "bg-success",
+                                        "Pending" => "bg-warning text-dark",
+                                        "Rejected" => "bg-danger",
+                                        _ => "bg-secondary"
+                                    };
+                                    string statusIcon = reg.Status switch
+                                    {
+                                        "Approved" => "bi-check-circle-fill",
+                                        "Pending" => "bi-clock-fill",
+                                        "Rejected" => "bi-x-circle-fill",
+                                        _ => "bi-question-circle"
+                                    };
+
+                                    <tr class="registration-row @statusClass" data-username="@reg.UserName?.ToLower()" data-fullname="@(user?.FullName?.ToLower() ?? "")" data-email="@(user?.Email?.ToLower() ?? "")">
+                                        <td class="fw-bold text-secondary">@(index++)</td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="user-avatar">
+                                                    @(reg.UserName?[0].ToString().ToUpper() ?? "?")
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">@reg.UserName</div>
+                                                    <small class="text-secondary">
+                                                        @if (user != null)
+                                                        {
+                                                            @user.FullName
+                                                            @if (!string.IsNullOrEmpty(user.StudentId))
+                                                            {
+                                                                <span class="ms-1">· ID: @user.StudentId</span>
+                                                            }
+                                                        }
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="text-secondary">@(user?.Email ?? "—")</span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-medium">@reg.RegistrationTime.ToLocalTime().ToString("MMM dd, yyyy")</div>
+                                            <small class="text-secondary">@reg.RegistrationTime.ToLocalTime().ToString("hh:mm tt")</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge @badgeClass px-3 py-2">
+                                                <i class="bi @statusIcon me-1"></i>@reg.Status
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                @if (reg.Status != "Approved")
+                                                {
+                                                    <form method="post" action="/Contest/ApproveRegistration">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="contestId" value="@contest?.Id" />
+                                                        <input type="hidden" name="userId" value="@reg.UserId" />
+                                                        <button type="submit" class="btn btn-sm btn-success action-btn" title="Approve">
+                                                            <i class="bi bi-check-lg"></i> Approve
+                                                        </button>
+                                                    </form>
+                                                }
+                                                @if (reg.Status != "Rejected")
+                                                {
+                                                    <form method="post" action="/Contest/RejectRegistration">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="contestId" value="@contest?.Id" />
+                                                        <input type="hidden" name="userId" value="@reg.UserId" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning action-btn" title="Reject">
+                                                            <i class="bi bi-x-lg"></i> Reject
+                                                        </button>
+                                                    </form>
+                                                }
+                                                <form method="post" action="/Contest/RemoveRegistration" onsubmit="return confirm('Remove this registration permanently?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="contestId" value="@contest?.Id" />
+                                                    <input type="hidden" name="userId" value="@reg.UserId" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger action-btn" title="Remove permanently">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="mt-3 text-center">
+            <small class="text-secondary">
+                <i class="bi bi-info-circle me-1"></i>
+                Showing @Model.Count() registration(s)
+                @if (currentFilter != "All") { <span>filtered by <strong>@currentFilter</strong></span> }
+                · Max participants: @(contest?.MaxParticipants ?? 1000)
+                · Contest status: <strong>@contest?.Status</strong>
+            </small>
+        </div>
+    </div>
+</div>
+
+<style>
+    .registrations-admin-page {
+        min-height: calc(100vh - 80px);
+    }
+
+    /* Page Header Card */
+    .page-header-card {
+        background: var(--glass-bg, rgba(30, 30, 40, 0.7));
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+        border-radius: 16px;
+        padding: 1.75rem 2rem;
+    }
+
+    .text-gradient {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Stats Cards */
+    .stat-card {
+        background: var(--glass-bg, rgba(30, 30, 40, 0.7));
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        border-radius: 14px 14px 0 0;
+    }
+
+    .stat-total::before { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+    .stat-approved::before { background: linear-gradient(90deg, #10b981, #34d399); }
+    .stat-pending::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .stat-rejected::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+    .stat-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-total .stat-icon { color: #818cf8; }
+    .stat-approved .stat-icon { color: #34d399; }
+    .stat-pending .stat-icon { color: #fbbf24; }
+    .stat-rejected .stat-icon { color: #f87171; }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .stat-total .stat-value { color: #a5b4fc; }
+    .stat-approved .stat-value { color: #6ee7b7; }
+    .stat-pending .stat-value { color: #fde68a; }
+    .stat-rejected .stat-value { color: #fca5a5; }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--text-secondary, #888);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Control Bar */
+    .control-bar {
+        background: var(--glass-bg, rgba(30, 30, 40, 0.7));
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+    }
+
+    /* Filter Tabs */
+    .filter-tabs {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-tab {
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-secondary, #888);
+        text-decoration: none;
+        transition: all 0.25s ease;
+        border: 1px solid transparent;
+    }
+
+    .filter-tab:hover {
+        background: rgba(99, 102, 241, 0.1);
+        color: #a5b4fc;
+        border-color: rgba(99, 102, 241, 0.2);
+    }
+
+    .filter-tab.active {
+        background: rgba(99, 102, 241, 0.15);
+        color: #818cf8;
+        border-color: rgba(99, 102, 241, 0.3);
+        font-weight: 600;
+    }
+
+    .filter-count {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.1rem 0.5rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        margin-left: 0.25rem;
+    }
+
+    .filter-tab.active .filter-count {
+        background: rgba(99, 102, 241, 0.25);
+    }
+
+    /* Search */
+    .search-wrapper {
+        position: relative;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-secondary, #888);
+        font-size: 0.9rem;
+    }
+
+    .search-input {
+        padding-left: 40px;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+        border-radius: 10px;
+        color: var(--text-primary, #e0e0e0);
+        transition: all 0.25s ease;
+    }
+
+    .search-input:focus {
+        background: rgba(0, 0, 0, 0.3);
+        border-color: rgba(99, 102, 241, 0.4);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .search-input::placeholder {
+        color: var(--text-secondary, #888);
+    }
+
+    /* Table */
+    .registrations-card {
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+    }
+
+    .registrations-card .table thead th {
+        background: rgba(0, 0, 0, 0.2);
+        border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary, #888);
+        padding: 1rem 1.25rem;
+    }
+
+    .registrations-card .table tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .registrations-card .table tbody tr:hover {
+        background: rgba(99, 102, 241, 0.04);
+    }
+
+    .registrations-card .table tbody td {
+        padding: 1rem 1.25rem;
+        vertical-align: middle;
+    }
+
+    /* Status Row Indicators */
+    .registration-row {
+        border-left: 3px solid transparent;
+    }
+
+    .registration-row.status-approved { border-left-color: #10b981; }
+    .registration-row.status-pending { border-left-color: #f59e0b; }
+    .registration-row.status-rejected { border-left-color: #ef4444; }
+
+    /* User Avatar */
+    .user-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1rem;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        flex-shrink: 0;
+        text-transform: uppercase;
+    }
+
+    /* Action Buttons */
+    .action-btn {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Empty State */
+    .empty-state {
+        padding: 2rem;
+    }
+
+    .empty-state i {
+        opacity: 0.3;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb-item a {
+        color: var(--text-secondary, #888);
+        transition: color 0.2s;
+    }
+
+    .breadcrumb-item a:hover {
+        color: #818cf8;
+    }
+
+    .breadcrumb-item.active {
+        color: var(--text-primary, #e0e0e0);
+    }
+
+    /* Row hide animation for search */
+    .registration-row.hidden-row {
+        display: none;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .page-header-card { padding: 1.25rem; }
+        .stat-value { font-size: 1.5rem; }
+        .filter-tabs { gap: 0.25rem; }
+        .filter-tab { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+    }
+</style>
+
+<script>
+    // Client-side search filtering
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('searchInput');
+        if (!searchInput) return;
+
+        searchInput.addEventListener('input', function () {
+            const query = this.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('.registration-row');
+
+            rows.forEach(function (row) {
+                const username = row.dataset.username || '';
+                const fullname = row.dataset.fullname || '';
+                const email = row.dataset.email || '';
+
+                if (query === '' || username.includes(query) || fullname.includes(query) || email.includes(query)) {
+                    row.classList.remove('hidden-row');
+                } else {
+                    row.classList.add('hidden-row');
+                }
+            });
+        });
+    });
+</script>

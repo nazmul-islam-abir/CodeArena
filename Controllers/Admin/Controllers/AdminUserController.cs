@@ -42,14 +42,27 @@ namespace MyMvcApp.Controllers.Admin.Controllers
             return RedirectToAction(nameof(Index));
         }
         
-        [HttpPost("RemoveAdmin/{id}")]
+        [HttpPost("MakeSetter/{id}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RemoveAdmin(int id)
+        public async Task<IActionResult> MakeSetter(int id)
         {
             var user = await _context.Users.FindAsync(id);
             if (user != null)
             {
-                // Prevent removing self if it's the only admin or just prevent removing own admin status
+                user.Role = "Setter";
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"{user.Username} is now a Setter.";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost("MakeUser/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MakeUser(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user != null)
+            {
                 var currentUserId = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
                 if (currentUserId == id.ToString())
                 {
@@ -59,7 +72,7 @@ namespace MyMvcApp.Controllers.Admin.Controllers
 
                 user.Role = "";
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"{user.Username} is no longer an Admin.";
+                TempData["SuccessMessage"] = $"{user.Username} is now a regular User.";
             }
             return RedirectToAction(nameof(Index));
         }

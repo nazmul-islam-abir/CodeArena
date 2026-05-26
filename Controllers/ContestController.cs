@@ -34,8 +34,7 @@ namespace MyMvcApp.Controllers
 
         private bool IsAdmin()
         {
-            var role = HttpContext.Session.GetString("UserRole");
-            return role == "Admin" || User.IsInRole("Admin");
+            return User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin");
         }
 
         // GET: /Contest
@@ -397,7 +396,7 @@ namespace MyMvcApp.Controllers
         #region Admin Actions
 
         // GET: /Contest/Create
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Setter")]
         [HttpGet("Create")]
         public async Task<IActionResult> Create()
         {
@@ -422,7 +421,7 @@ namespace MyMvcApp.Controllers
         }
 
         // POST: /Contest/Create
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Setter")]
         [HttpPost("Create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ContestViewModel model, string? problemIds)
@@ -536,7 +535,7 @@ namespace MyMvcApp.Controllers
         }
 
         // GET: /Contest/Edit/{id}
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Setter")]
         [HttpGet("Edit/{id:int}")]
         public async Task<IActionResult> Edit(int id)
         {
@@ -563,7 +562,7 @@ namespace MyMvcApp.Controllers
         }
 
         // POST: /Contest/Edit/{id}
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Setter")]
         [HttpPost("Edit/{id:int}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, ContestViewModel model, string? problemIds, string? EndTimeOverride)
@@ -714,7 +713,7 @@ namespace MyMvcApp.Controllers
         }
 
         // POST: /Contest/Delete/{id}
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Setter")]
         [HttpPost("Delete/{id:int}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -730,7 +729,7 @@ namespace MyMvcApp.Controllers
         }
 
         // POST: /Contest/ToggleFreeze/{id}
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Setter")]
         [HttpPost("ToggleFreeze/{id:int}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleFreeze(int id)
@@ -750,24 +749,47 @@ namespace MyMvcApp.Controllers
         }
 
         // GET: /Contest/{id}/Registrations
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Setter")]
         [HttpGet("{id:int}/Registrations")]
-        public async Task<IActionResult> Registrations(int id)
+        public async Task<IActionResult> Registrations(int id, string? filter = null)
         {
             var contest = await _context.Contests.FindAsync(id);
             if (contest == null) return NotFound();
 
-            var registrations = await _context.ContestRegistrations
+            contest.Status = GetContestStatus(contest.StartTime, contest.EndTime);
+
+            var query = _context.ContestRegistrations
                 .Where(r => r.ContestId == id)
+                .Include(r => r.User);
+
+            // Apply filter
+            if (!string.IsNullOrEmpty(filter) && filter != "All")
+            {
+                query = (Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<ContestRegistration, User?>)
+                    query.Where(r => r.Status == filter);
+            }
+
+            var registrations = await query
                 .OrderByDescending(r => r.RegistrationTime)
                 .ToListAsync();
 
+            // Stats
+            var allRegistrations = await _context.ContestRegistrations
+                .Where(r => r.ContestId == id)
+                .ToListAsync();
+
             ViewBag.Contest = contest;
+            ViewBag.TotalCount = allRegistrations.Count;
+            ViewBag.ApprovedCount = allRegistrations.Count(r => r.Status == "Approved");
+            ViewBag.PendingCount = allRegistrations.Count(r => r.Status == "Pending");
+            ViewBag.RejectedCount = allRegistrations.Count(r => r.Status == "Rejected");
+            ViewBag.CurrentFilter = filter ?? "All";
+
             return View(registrations);
         }
 
         // POST: /Contest/ApproveRegistration
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Setter")]
         [HttpPost("ApproveRegistration")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveRegistration(int contestId, int userId)
@@ -786,7 +808,7 @@ namespace MyMvcApp.Controllers
         }
 
         // POST: /Contest/RejectRegistration
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Setter")]
         [HttpPost("RejectRegistration")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectRegistration(int contestId, int userId)
@@ -796,12 +818,71 @@ namespace MyMvcApp.Controllers
 
             if (registration != null)
             {
-                _context.ContestRegistrations.Remove(registration);
+                registration.Status = "Rejected";
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Registration for {registration.UserName} rejected and removed.";
+                TempData["SuccessMessage"] = $"Registration for {registration.UserName} rejected.";
             }
 
             return RedirectToAction("Registrations", new { id = contestId });
+        }
+
+        // POST: /Contest/RemoveRegistration
+        [Authorize(Roles = "Admin,Setter")]
+        [HttpPost("RemoveRegistration")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveRegistration(int contestId, int userId)
+        {
+            var registration = await _context.ContestRegistrations
+                .FirstOrDefaultAsync(r => r.ContestId == contestId && r.UserId == userId);
+
+            if (registration != null)
+            {
+                _context.ContestRegistrations.Remove(registration);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Registration for {registration.UserName} removed.";
+            }
+
+            return RedirectToAction("Registrations", new { id = contestId });
+        }
+
+        // POST: /Contest/{id}/BulkApproveAll
+        [Authorize(Roles = "Admin,Setter")]
+        [HttpPost("{id:int}/BulkApproveAll")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkApproveAll(int id)
+        {
+            var pending = await _context.ContestRegistrations
+                .Where(r => r.ContestId == id && r.Status == "Pending")
+                .ToListAsync();
+
+            foreach (var reg in pending)
+            {
+                reg.Status = "Approved";
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = $"{pending.Count} registration(s) approved.";
+            return RedirectToAction("Registrations", new { id });
+        }
+
+        // POST: /Contest/{id}/BulkRejectAll
+        [Authorize(Roles = "Admin,Setter")]
+        [HttpPost("{id:int}/BulkRejectAll")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkRejectAll(int id)
+        {
+            var pending = await _context.ContestRegistrations
+                .Where(r => r.ContestId == id && r.Status == "Pending")
+                .ToListAsync();
+
+            foreach (var reg in pending)
+            {
+                reg.Status = "Rejected";
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = $"{pending.Count} registration(s) rejected.";
+            return RedirectToAction("Registrations", new { id });
         }
 
         #endregion

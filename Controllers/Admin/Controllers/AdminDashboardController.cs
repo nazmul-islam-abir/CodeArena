@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MyMvcApp.Controllers.Admin.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Setter")]
     [Route("Admin")]
     public class AdminDashboardController : Controller
     {
@@ -34,3 +34,4 @@ namespace MyMvcApp.Controllers.Admin.Controllers
         }
     }
 }
+

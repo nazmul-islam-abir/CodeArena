@@ -26,7 +26,7 @@
                     <li class="nav-item"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Ranking" ? "active" : "")" href="/Ranking">Ranking</a></li>
                     <li class="nav-item"><a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Submissions" ? "active" : "")" href="/Submissions">Submissions</a></li>
                     <!-- Compiler is accessible only when solving a problem, remove top-level nav link -->
-                    @if (Context.Session.GetString("UserRole") == "Admin" || User.IsInRole("Admin"))
+                    @if (User.Identity != null && User.Identity.IsAuthenticated && (User.IsInRole("Admin") || User.IsInRole("Setter")))
                     {
                         <li class="nav-item">
                             <a class="nav-link fw-bold text-danger" href="/Admin/Dashboard">
@@ -40,14 +40,16 @@
                         <i class="bi bi-sun-fill me-1"></i> <span id="themeText">Light</span>
                     </button>
                     
-                    @if (Context.Session.GetString("UserId") != null)
+                    @if (User.Identity != null && User.Identity.IsAuthenticated)
                     {
+                        var username = User.Identity.Name;
+                        var userFullName = User.FindFirst("FullName")?.Value ?? username;
                         <div class="dropdown">
                             <button class="btn btn-outline-theme dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
                                 <div class="user-avatar">
-                                    @(Context.Session.GetString("UserFullName")?.Substring(0, 1) ?? "U")
+                                    @(userFullName?.Substring(0, 1) ?? "U")
                                 </div>
-                                <span>@Context.Session.GetString("Username")</span>
+                                <span>@username</span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="/Auth/Profile"><i class="bi bi-person-circle me-2"></i>My Profile</a></li>
@@ -98,19 +100,79 @@
         @RenderBody()
     </div>
 
-    <footer class="pt-5 pb-4 mt-5">
+    <footer class="site-footer mt-5">
+        <div class="footer-gradient-bar"></div>
         <div class="container">
-            <div class="row">
-                <div class="col-md-5">
-                    <a class="navbar-brand fw-bold fs-3" href="/"><i class="bi bi-code-square me-2 text-primary"></i>CodeArena</a>
-                    <p class="text-secondary small col-lg-8 mt-3">Online programming judge & contest system — built with ASP.NET MVC.</p>
-                    <p class="small text-secondary">© 2025 Team CodeArena</p>
+            <!-- Main Footer -->
+            <div class="row py-5 gy-4">
+                <!-- Brand Column -->
+                <div class="col-lg-4 col-md-6">
+                    <a class="d-inline-flex align-items-center text-decoration-none mb-3" href="/">
+                        <i class="bi bi-code-square fs-2 me-2" style="color: var(--primary);"></i>
+                        <span class="fw-bold fs-3" style="color: var(--text-primary);">CodeArena</span>
+                    </a>
+                    <p class="text-secondary" style="font-size: 0.95rem; line-height: 1.7; max-width: 320px;">
+                        A modern online judge & contest platform — practice problems, compete in contests, and sharpen your coding skills.
+                    </p>
+                    <div class="d-flex gap-2 mt-3">
+                        <a href="#" class="footer-social-btn" title="GitHub"><i class="bi bi-github"></i></a>
+                        <a href="#" class="footer-social-btn" title="Facebook"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="footer-social-btn" title="LinkedIn"><i class="bi bi-linkedin"></i></a>
+                        <a href="#" class="footer-social-btn" title="Twitter / X"><i class="bi bi-twitter-x"></i></a>
+                    </div>
                 </div>
-                <div class="col-md-7">
-                    <div class="row">
-                        <div class="col-4"><h6 style="color: var(--text-primary);">Platform</h6><ul class="list-unstyled small"><li><a href="/Problem" class="text-secondary text-decoration-none">Problems</a></li><li><a href="/Contest" class="text-secondary text-decoration-none">Contests</a></li><li><a href="/Ranking" class="text-secondary text-decoration-none">Ranking</a></li></ul></div>
-                        <div class="col-4"><h6 style="color: var(--text-primary);">Support</h6><ul class="list-unstyled small"><li><a href="#" class="text-secondary text-decoration-none">Documentation</a></li><li><a href="#" class="text-secondary text-decoration-none">API</a></li></ul></div>
-                        <div class="col-4"><h6 style="color: var(--text-primary);">Team</h6><ul class="list-unstyled small"><li><a href="#" class="text-secondary text-decoration-none">About</a></li><li><a href="#" class="text-secondary text-decoration-none">Contact</a></li></ul></div>
+
+                <!-- Platform Links -->
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h6 class="footer-heading">Platform</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="/Problem"><i class="bi bi-arrow-right-short me-1"></i>Problems</a></li>
+                        <li><a href="/Contest"><i class="bi bi-arrow-right-short me-1"></i>Contests</a></li>
+                        <li><a href="/Ranking"><i class="bi bi-arrow-right-short me-1"></i>Ranking</a></li>
+                        <li><a href="/Submissions"><i class="bi bi-arrow-right-short me-1"></i>Submissions</a></li>
+                    </ul>
+                </div>
+
+                <!-- Resources Links -->
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h6 class="footer-heading">Resources</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="#"><i class="bi bi-arrow-right-short me-1"></i>Documentation</a></li>
+                        <li><a href="#"><i class="bi bi-arrow-right-short me-1"></i>API</a></li>
+                        <li><a href="#"><i class="bi bi-arrow-right-short me-1"></i>FAQ</a></li>
+                    </ul>
+                </div>
+
+                <!-- Company Links -->
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h6 class="footer-heading">Company</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="/Home/Team"><i class="bi bi-arrow-right-short me-1"></i>Our Team</a></li>
+                        <li><a href="#"><i class="bi bi-arrow-right-short me-1"></i>About Us</a></li>
+                        <li><a href="#"><i class="bi bi-arrow-right-short me-1"></i>Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h6 class="footer-heading">Contact</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="mailto:support@codearena.com"><i class="bi bi-envelope me-1"></i>Email Us</a></li>
+                        <li><a href="/Home/Team"><i class="bi bi-people me-1"></i>Meet the Team</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Bottom Bar -->
+            <div class="footer-bottom">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+                    <p class="mb-0 text-secondary" style="font-size: 0.875rem;">
+                        © 2026 <strong>CodeArena</strong>. Built with <i class="bi bi-heart-fill text-danger"></i> by
+                        <a href="/Home/Team" class="text-decoration-none" style="color: var(--primary);">Team CodeArena</a>
+                    </p>
+                    <div class="d-flex gap-3">
+                        <a href="#" class="text-secondary text-decoration-none footer-bottom-link" style="font-size: 0.85rem;">Privacy Policy</a>
+                        <a href="#" class="text-secondary text-decoration-none footer-bottom-link" style="font-size: 0.85rem;">Terms of Service</a>
                     </div>
                 </div>
             </div>

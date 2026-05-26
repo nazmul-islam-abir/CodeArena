@@ -52,7 +52,7 @@
                     }
                     else if (isUpcoming)
                     {
-                        <div class="countdown-timer" data-end="@Model.StartTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss")">
+                        <div class="countdown-timer" data-end="@Model.StartTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss")" data-is-upcoming="true">
                             <div class="display-6 fw-bold text-warning">--:--:--</div>
                             <small class="text-secondary">Starts in</small>
                         </div>
@@ -109,7 +109,7 @@
             </a>
         }
 
-        @if (User.IsInRole("Admin"))
+        @if ((User.IsInRole("Admin") || User.IsInRole("Setter")))
         {
             <a href="/Contest/Edit/@Model.Id" class="btn btn-outline-secondary btn-lg">
                 <i class="bi bi-pencil me-2"></i>Edit
@@ -274,12 +274,17 @@
             var display = timer.querySelector('.display-6');
             if (!display) return;
 
-            if (distance < 0) {
+            if (distance <= 0) {
+                if (timer.dataset.isUpcoming === 'true' && !timer.dataset.reloaded) {
+                    timer.dataset.reloaded = 'true';
+                    setTimeout(() => location.reload(), 1000);
+                }
+                
                 display.innerHTML = "00:00:00";
                 display.classList.remove('text-primary', 'text-warning');
                 display.classList.add('text-secondary');
                 var smallText = timer.querySelector('small');
-                if (smallText) smallText.textContent = "Contest Ended";
+                if (smallText) smallText.textContent = timer.dataset.isUpcoming === 'true' ? "Contest Started" : "Contest Ended";
             } else {
                 var hours = Math.floor(distance / (1000 * 60 * 60));
                 var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));

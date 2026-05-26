@@ -30,7 +30,7 @@ namespace MyMvcApp.Controllers
         {
             try
             {
-                var isAdmin = User.IsInRole("Admin") || HttpContext.Session.GetString("UserRole") == "Admin";
+                var isAdmin = User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin");
 
                 var problems = await _context.Problems
                     .Where(p => p.IsActive)
@@ -58,7 +58,7 @@ namespace MyMvcApp.Controllers
         {
             try
             {
-                var isAdmin = User.IsInRole("Admin") || HttpContext.Session.GetString("UserRole") == "Admin";
+                var isAdmin = User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin");
 
                 var problem = await _context.Problems
                     .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);
@@ -92,7 +92,7 @@ namespace MyMvcApp.Controllers
         public async Task<IActionResult> Solve(int id, int? contestId = null)
         {
             // Check if user is logged in
-            var userId = HttpContext.Session.GetString("UserId");
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 TempData["ErrorMessage"] = "Please login to solve problems.";
@@ -101,7 +101,7 @@ namespace MyMvcApp.Controllers
 
             try
             {
-                var isAdmin = User.IsInRole("Admin") || HttpContext.Session.GetString("UserRole") == "Admin";
+                var isAdmin = User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin");
 
                 var problem = await _context.Problems
                     .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);

@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace MyMvcApp.Controllers.Admin
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Setter")]
     [Route("Admin/Codeforces")]
     public class CodeforcesImportController : Controller
     {

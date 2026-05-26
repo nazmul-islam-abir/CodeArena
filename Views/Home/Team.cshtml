@@ -1,0 +1,202 @@
+@{
+    ViewData["Title"] = "Our Team";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5">
+    <!-- Hero Section -->
+    <div class="text-center mb-5">
+        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-3 d-inline-block" style="font-size: 0.85rem;">
+            <i class="bi bi-people-fill me-1"></i> Meet The Team
+        </span>
+        <h1 class="display-4 fw-bold mb-3">The Minds Behind <span style="color: var(--primary);">CodeArena</span></h1>
+        <p class="lead text-secondary mx-auto" style="max-width: 600px;">
+            We're passionate developers building the next generation of competitive programming platforms.
+        </p>
+    </div>
+
+    <!-- Team Cards -->
+    <div class="row justify-content-center g-4 mb-5">
+        <!-- Md. Abdullah -->
+        <div class="col-md-6 col-lg-5">
+            <div class="team-card">
+                <div class="team-card-glow"></div>
+                <div class="team-card-inner">
+                    <div class="team-avatar-wrapper">
+                        <img src="~/images/team/abdullah.png" alt="Md. Abdullah" class="team-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                        <div class="team-avatar-fallback" style="display:none;">MA</div>
+                    </div>
+                    <h3 class="fw-bold mb-1">Md. Abdullah</h3>
+                    <span class="team-role">Full Stack Developer & Co-Founder</span>
+                    <p class="text-secondary mt-3 px-3" style="font-size: 0.95rem;">
+                        Passionate about building scalable web applications and competitive programming platforms.
+                    </p>
+                    <div class="team-social">
+                        <a href="#" class="team-social-link" title="GitHub"><i class="bi bi-github"></i></a>
+                        <a href="#" class="team-social-link" title="LinkedIn"><i class="bi bi-linkedin"></i></a>
+                        <a href="#" class="team-social-link" title="Facebook"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="team-social-link" title="Twitter / X"><i class="bi bi-twitter-x"></i></a>
+                        <a href="mailto:" class="team-social-link" title="Email"><i class="bi bi-envelope-fill"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nazmul Islam Abir -->
+        <div class="col-md-6 col-lg-5">
+            <div class="team-card">
+                <div class="team-card-glow"></div>
+                <div class="team-card-inner">
+                    <div class="team-avatar-wrapper">
+                        <img src="~/images/team/abir.png" alt="Nazmul Islam Abir" class="team-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                        <div class="team-avatar-fallback" style="display:none;">NA</div>
+                    </div>
+                    <h3 class="fw-bold mb-1">Nazmul Islam Abir</h3>
+                    <span class="team-role">Full Stack Developer & Co-Founder</span>
+                    <p class="text-secondary mt-3 px-3" style="font-size: 0.95rem;">
+                        Focused on creating elegant user experiences and robust backend systems for developers.
+                    </p>
+                    <div class="team-social">
+                        <a href="#" class="team-social-link" title="GitHub"><i class="bi bi-github"></i></a>
+                        <a href="#" class="team-social-link" title="LinkedIn"><i class="bi bi-linkedin"></i></a>
+                        <a href="#" class="team-social-link" title="Facebook"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="team-social-link" title="Twitter / X"><i class="bi bi-twitter-x"></i></a>
+                        <a href="mailto:" class="team-social-link" title="Email"><i class="bi bi-envelope-fill"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mission Section -->
+    <div class="team-mission-card mx-auto" style="max-width: 800px;">
+        <div class="text-center">
+            <i class="bi bi-rocket-takeoff-fill fs-1 mb-3" style="color: var(--primary);"></i>
+            <h3 class="fw-bold mb-3">Our Mission</h3>
+            <p class="text-secondary mb-0" style="font-size: 1.05rem; line-height: 1.8;">
+                CodeArena was built to provide a modern, accessible, and engaging platform for competitive programmers.
+                We believe that everyone should have the tools to sharpen their problem-solving skills, compete with peers, 
+                and grow as developers — all in one place.
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* ── Team Card ── */
+    .team-card {
+        position: relative;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .team-card:hover {
+        transform: translateY(-8px);
+    }
+    .team-card-glow {
+        position: absolute;
+        top: -2px; left: -2px; right: -2px; bottom: -2px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, var(--primary), #a855f7, #ec4899, var(--primary));
+        background-size: 300% 300%;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        z-index: 0;
+        animation: glow-rotate 4s ease infinite;
+    }
+    .team-card:hover .team-card-glow {
+        opacity: 1;
+    }
+    @@keyframes glow-rotate {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+    .team-card-inner {
+        position: relative;
+        z-index: 1;
+        background: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: 20px;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+    }
+    .team-card:hover .team-card-inner {
+        border-color: transparent;
+    }
+
+    /* ── Avatar ── */
+    .team-avatar-wrapper {
+        width: 140px;
+        height: 140px;
+        margin: 0 auto 1.25rem;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 4px solid var(--primary);
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.2);
+        position: relative;
+    }
+    .team-avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .team-avatar-fallback {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: white;
+        background: linear-gradient(135deg, var(--primary), #a855f7);
+    }
+
+    /* ── Role Badge ── */
+    .team-role {
+        display: inline-block;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--primary);
+        background: rgba(99, 102, 241, 0.1);
+        padding: 4px 16px;
+        border-radius: 20px;
+    }
+
+    /* ── Social Links ── */
+    .team-social {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 1.25rem;
+    }
+    .team-social-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: var(--bg-body);
+        border: 1px solid var(--border-light);
+        color: var(--text-secondary);
+        font-size: 1.15rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    .team-social-link:hover {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+    }
+
+    /* ── Mission Card ── */
+    .team-mission-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: 20px;
+        padding: 2.5rem;
+    }
+</style>

@@ -11,10 +11,11 @@
     <div class="container py-5">
         <div class="row align-items-center g-5">
             <div class="col-lg-6" data-aos="fade-right">
-                @if (Context.Session.GetString("UserId") != null)
+                @if (User.Identity != null && User.Identity.IsAuthenticated)
                 {
+                    var userFullName = User.FindFirst("FullName")?.Value ?? User.Identity.Name;
                     <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 mb-4 d-inline-block shadow-sm">
-                        <i class="bi bi-person-circle me-1"></i> Welcome back, @Context.Session.GetString("UserFullName")!
+                        <i class="bi bi-person-circle me-1"></i> Welcome back, @userFullName!
                     </span>
                 }
                 else

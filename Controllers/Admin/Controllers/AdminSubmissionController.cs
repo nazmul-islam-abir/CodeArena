@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace MyMvcApp.Controllers.Admin.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Setter")]
     [Route("Admin/Submissions")]
     public class AdminSubmissionController : Controller
     {
@@ -22,19 +22,33 @@ namespace MyMvcApp.Controllers.Admin.Controllers
         }
 
         [HttpGet("")]
-        public async Task<IActionResult> Index(int page = 1, int pageSize = 50)
+        public async Task<IActionResult> Index(int? problemId = null, int? userId = null, int? contestId = null, bool? showPending = null)
         {
-            var totalItems = await _context.Submissions.CountAsync();
-            var submissions = await _context.Submissions
+            var query = _context.Submissions
                 .OrderByDescending(s => s.SubmittedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
+                .AsQueryable();
+
+            if (problemId.HasValue)
+                query = query.Where(s => s.ProblemId == problemId.Value);
+
+            if (userId.HasValue)
+                query = query.Where(s => s.UserId == userId.Value);
+
+            if (contestId.HasValue)
+                query = query.Where(s => s.ContestId == contestId.Value);
+
+            if (showPending.HasValue && showPending.Value)
+                query = query.Where(s => s.Verdict == "Processing" || s.Verdict == "Queued");
+
+            var submissions = await query
+                .Take(200)
                 .ToListAsync();
 
-            ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = (int)System.Math.Ceiling((double)totalItems / pageSize);
-            
-            return View("~/Views/Admin/Submission/Index.cshtml", submissions);
+            var pendingCount = await _context.Submissions
+                .CountAsync(s => s.Verdict == "Processing" || s.Verdict == "Queued");
+            ViewBag.PendingCount = pendingCount;
+
+            return View("~/Views/Submissions/Index.cshtml", submissions);
         }
 
         [HttpPost("Rejudge/{id}")]
@@ -66,7 +80,15 @@ namespace MyMvcApp.Controllers.Admin.Controllers
             var submission = await _context.Submissions.FindAsync(id);
             if (submission == null) return NotFound();
             
-            return View("~/Views/Admin/Submission/Details.cshtml", submission);
+            bool isPending = submission.Verdict == "Processing" || submission.Verdict == "Queued" || string.IsNullOrEmpty(submission.Verdict);
+            if (isPending)
+            {
+                ViewBag.IsPending = true;
+                ViewBag.AutoRefresh = true;
+            }
+            
+            return View("~/Views/Submissions/Details.cshtml", submission);
         }
     }
 }
+

@@ -6,7 +6,7 @@ using MyMvcApp.Models;
 
 namespace MyMvcApp.Controllers.Admin
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Setter")]
     [Route("Admin/Problems")]
     public class AdminProblemController : Controller
     {
@@ -134,3 +134,4 @@ namespace MyMvcApp.Controllers.Admin
         }
     }
 }
+

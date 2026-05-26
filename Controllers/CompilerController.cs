@@ -60,7 +60,7 @@ public class CompilerController : Controller
     [HttpPost]
     public async Task<IActionResult> Index(string sourceCode, int languageId = 54, int? problemId = null, int? contestId = null, string action = "submit")
     {
-        var userId = HttpContext.Session.GetString("UserId");
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         bool isLoggedIn = !string.IsNullOrEmpty(userId);
 
         if (problemId == null && TempData["ProblemTitle"] != null)
